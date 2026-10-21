@@ -1,0 +1,28 @@
+# Environments & Secrets
+.env
+*.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.egg-info/
+dist/
+build/
+.venv/
+env/
+venv/
+
+# Databases & local state
+*.db
+*.db-wal
+*.db-shm
+.persistent_crewai/
+mock_github.json
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

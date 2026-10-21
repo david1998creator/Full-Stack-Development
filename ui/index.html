@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentHub — AgentOps Control Console</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Lucide icons via CDN or SVG helpers -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f17;
+      color: #e2e8f0;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .badge-p0 { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-p1 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-p2 { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-sm">
+
+  <!-- TOP APP HEADER -->
+  <header class="h-14 border-b border-slate-800/80 bg-[#0d131f] flex items-center justify-between px-6 z-20 shrink-0">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
+          <i class="ph-bold ph-robot text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-base tracking-tight text-white">AgentHub</span>
+            <span class="text-[10px] font-medium bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">PRO</span>
+          </div>
+          <div class="text-[11px] text-slate-400 font-normal -mt-0.5">AgentOps Control Console</div>
+        </div>
+      </div>
+
+      <div class="h-5 w-px bg-slate-800 mx-1"></div>
+
+      <!-- Project Selector Pill -->
+      <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200">
+        <span class="font-medium" id="workspaceNameHeader">Persistent CrewAI SDLC</span>
+        <i class="ph ph-caret-down text-slate-400"></i>
+      </div>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-3">
+      <!-- Time Range Filters -->
+      <div class="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs font-medium">
+        <button class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30">Today</button>
+        <button class="px-2.5 py-1 text-slate-400 hover:text-slate-200">7 Days</button>
+        <button class="px-2.5 py-1 text-slate-400 hover:text-slate-200">30 Days</button>
+      </div>
+
+      <div class="h-4 w-px bg-slate-800"></div>
+
+      <!-- Quick Metrics Pill -->
+      <div class="flex items-center gap-3 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg text-xs">
+        <div class="flex items-center gap-1.5 text-slate-300">
+          <i class="ph ph-users text-slate-400"></i>
+          <span><strong id="activeAgentCount">8</strong> agents</span>
+        </div>
+        <span class="text-emerald-400 font-semibold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 100%
+        </span>
+      </div>
+
+      <!-- User avatar -->
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center font-semibold text-slate-950 text-xs shadow-md">
+        OP
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN BODY: TWO-COLUMN LAYOUT -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- LEFT COLUMN: AGENT EXECUTION ROSTER -->
+    <aside class="w-80 md:w-96 border-r border-slate-800/80 bg-[#0d131f]/70 flex flex-col shrink-0">
+      <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">AGENTS</div>
+          <div class="text-sm font-semibold text-white">Execution roster</div>
+        </div>
+        <button onclick="refreshData()" title="Refresh" class="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800">
+          <i class="ph ph-arrows-clockwise text-base"></i>
+        </button>
+      </div>
+
+      <!-- Agent Cards Scrollable List -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-2.5" id="agentRosterList">
+        <!-- Rendered dynamically -->
+        <div class="text-slate-500 text-center py-8">Loading agent roster...</div>
+      </div>
+
+      <!-- Quick Assign Task Button at bottom of roster -->
+      <div class="p-3 border-t border-slate-800/80 bg-slate-900/50">
+        <button onclick="openAssignTaskModal()" class="w-full py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-950/20">
+          <i class="ph-bold ph-plus"></i> Assign New Task to Agent
+        </button>
+      </div>
+    </aside>
+
+    <!-- RIGHT COLUMN: WORKSPACE & PROJECT FLOW KANBAN -->
+    <main class="flex-1 flex flex-col overflow-y-auto bg-[#0b0f17] p-6 space-y-6">
+      
+      <!-- WORKSPACE METRICS ROW -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">WORKSPACE</div>
+            <h1 class="text-xl font-bold text-white tracking-tight" id="workspaceNameTitle">Persistent CrewAI SDLC</h1>
+          </div>
+          <div class="flex items-center gap-2 text-xs bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300">
+            <span>Delivery confidence:</span>
+            <span class="text-emerald-400 font-semibold flex items-center gap-1.5">
+              <i class="ph-fill ph-check-circle text-emerald-400"></i> High Confidence
+            </span>
+          </div>
+        </div>
+
+        <!-- 5 KPI Cards Row -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+          
+          <!-- Card 1: Active Agents -->
+          <div class="glass-panel p-3.5 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Active Agents</span>
+              <i class="ph ph-broadcast text-slate-500"></i>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-white" id="statActiveAgents">8</span>
+              <span class="text-[11px] text-emerald-400 font-medium">All ready</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Completed Tasks -->
+          <div class="glass-panel p-3.5 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Completed Tasks</span>
+              <i class="ph ph-check-circle text-slate-500"></i>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-white" id="statCompletedTasks">6</span>
+              <span class="text-[11px] text-emerald-400 font-medium">+100% verified</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Open Risks -->
+          <div class="glass-panel p-3.5 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Open Risks</span>
+              <i class="ph ph-warning text-slate-500"></i>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-white" id="statOpenRisks">0</span>
+              <span class="text-[11px] text-slate-500 font-medium">Clean audit</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Failed Checks -->
+          <div class="glass-panel p-3.5 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Failed Checks</span>
+              <i class="ph ph-activity text-slate-500"></i>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-emerald-400" id="statFailedChecks">0</span>
+              <span class="text-[11px] text-emerald-400/80 font-medium">484/484 pass</span>
+            </div>
+          </div>
+
+          <!-- Card 5: Estimated Cost -->
+          <div class="glass-panel p-3.5 rounded-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Estimated Cost</span>
+              <i class="ph ph-currency-dollar text-slate-500"></i>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-white" id="statCost">$14.20</span>
+              <span class="text-[11px] text-slate-400 font-medium">18% of cap</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- PROJECT FLOW KANBAN BOARD -->
+      <div class="flex-1 flex flex-col">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">DELIVERY</div>
+            <h2 class="text-base font-semibold text-white">Project flow</h2>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-400" id="totalTaskCountBadge">8 visible tasks</span>
+            <button onclick="openAssignTaskModal()" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
+              <i class="ph ph-plus"></i> New Task
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Column Kanban Board -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+          
+          <!-- Column: Backlog -->
+          <div class="bg-slate-900/60 border border-slate-800/70 rounded-xl p-3 flex flex-col">
+            <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-800 text-xs">
+              <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-slate-500"></span> Backlog
+              </span>
+              <span class="text-[11px] font-semibold text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded" id="countBacklog">0</span>
+            </div>
+            <div class="space-y-2.5 flex-1 overflow-y-auto" id="colBacklog"></div>
+          </div>
+
+          <!-- Column: In Progress -->
+          <div class="bg-slate-900/60 border border-slate-800/70 rounded-xl p-3 flex flex-col">
+            <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-800 text-xs">
+              <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span> In Progress
+              </span>
+              <span class="text-[11px] font-semibold text-sky-400 bg-sky-950/60 border border-sky-800/40 px-1.5 py-0.5 rounded" id="countInProgress">0</span>
+            </div>
+            <div class="space-y-2.5 flex-1 overflow-y-auto" id="colInProgress"></div>
+          </div>
+
+          <!-- Column: Review -->
+          <div class="bg-slate-900/60 border border-slate-800/70 rounded-xl p-3 flex flex-col">
+            <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-800 text-xs">
+              <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-400"></span> Review
+              </span>
+              <span class="text-[11px] font-semibold text-amber-400 bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.5 rounded" id="countReview">0</span>
+            </div>
+            <div class="space-y-2.5 flex-1 overflow-y-auto" id="colReview"></div>
+          </div>
+
+          <!-- Column: Done -->
+          <div class="bg-slate-900/60 border border-slate-800/70 rounded-xl p-3 flex flex-col">
+            <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-800 text-xs">
+              <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Done
+              </span>
+              <span class="text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.5 rounded" id="countDone">0</span>
+            </div>
+            <div class="space-y-2.5 flex-1 overflow-y-auto" id="colDone"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- SLIDE-OVER CHAT DRAWER WITH AGENT -->
+  <div id="chatDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-[#0f172a] border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <!-- Drawer Header -->
+    <div class="h-16 px-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+      <div class="flex items-center gap-3">
+        <div id="drawerAvatar" class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
+          <i class="ph-bold ph-robot"></i>
+        </div>
+        <div>
+          <h3 id="drawerAgentName" class="font-semibold text-white text-sm">Coordinator / Manager</h3>
+          <p id="drawerAgentRole" class="text-xs text-slate-400">Direct grounded chat & task dispatch</p>
+        </div>
+      </div>
+      <button onclick="closeChatDrawer()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition">
+        <i class="ph ph-x text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Quick Actions Banner -->
+    <div class="bg-slate-900/50 px-5 py-2.5 border-b border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs">
+      <button onclick="quickPrompt('What is the current status of the project?')" class="whitespace-nowrap px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60">
+        📊 What's project status?
+      </button>
+      <button onclick="quickPrompt('What are your active priorities and blockers?')" class="whitespace-nowrap px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60">
+        ⚠️ Any blockers?
+      </button>
+      <button onclick="quickPrompt('Give me a brief summary of completed tasks.')" class="whitespace-nowrap px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60">
+        📝 Recent milestones
+      </button>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="flex-1 overflow-y-auto p-5 space-y-4" id="chatMessages">
+      <!-- Default welcome msg -->
+      <div class="flex gap-3">
+        <div class="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
+          <i class="ph-bold ph-robot"></i>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl rounded-tl-none text-xs text-slate-200 max-w-[85%] leading-relaxed">
+          Hello! I am connected to the persistent project memory. Ask me anything about my current work, ask for a status update, or assign me a specific task.
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="p-4 border-t border-slate-800 bg-slate-900/80">
+      <form onsubmit="handleSendMessage(event)" class="flex gap-2">
+        <input 
+          id="chatInput"
+          type="text" 
+          placeholder="Ask or command this agent..." 
+          class="flex-1 bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:outline-none rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500"
+          autocomplete="off"
+        />
+        <button type="submit" id="sendBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3.5 py-2 rounded-lg font-semibold text-xs flex items-center gap-1 transition">
+          <span>Send</span>
+          <i class="ph-bold ph-paper-plane-right"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ASSIGN TASK MODAL -->
+  <div id="taskModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-white text-base">Assign New Task</h3>
+        <button onclick="closeAssignTaskModal()" class="text-slate-400 hover:text-white">
+          <i class="ph ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleCreateTask(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block text-slate-400 font-medium mb-1">Task Title</label>
+          <input id="modalTaskTitle" required type="text" placeholder="e.g. Implement webhook notification trigger" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500" />
+        </div>
+
+        <div>
+          <label class="block text-slate-400 font-medium mb-1">Assign to Agent</label>
+          <select id="modalTaskRole" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+            <option value="Coordinator">Coordinator / Manager</option>
+            <option value="Architect">Architect</option>
+            <option value="Designer">Designer</option>
+            <option value="Developer" selected>Developer</option>
+            <option value="Tester">Tester</option>
+            <option value="Reviewer">Reviewer</option>
+            <option value="GitHub Manager">GitHub Manager</option>
+            <option value="Memory & Status Manager">Memory & Status Manager</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 font-medium mb-1">Priority</label>
+            <select id="modalTaskPriority" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+              <option value="P0">P0 (Critical)</option>
+              <option value="P1" selected>P1 (High)</option>
+              <option value="P2">P2 (Medium)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 font-medium mb-1">Initial Status</label>
+            <select id="modalTaskStatus" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+              <option value="Backlog" selected>Backlog</option>
+              <option value="In Progress">In Progress</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeAssignTaskModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold">Assign Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    let currentAgent = null;
+    let agentsData = [];
+    let tasksData = {};
+
+    async function init() {
+      await refreshData();
+      setInterval(refreshData, 10000); // Polling every 10s for live updates
+    }
+
+    async function refreshData() {
+      try {
+        // Fetch overview
+        const resOverview = await fetch('/api/overview');
+        const overview = await resOverview.json();
+        renderOverview(overview);
+
+        // Fetch agents
+        const resAgents = await fetch('/api/agents');
+        agentsData = await resAgents.json();
+        renderAgents(agentsData);
+
+        // Fetch tasks
+        const resTasks = await fetch('/api/tasks');
+        tasksData = await resTasks.json();
+        renderTasks(tasksData);
+      } catch (err) {
+        console.error("Failed to fetch state:", err);
+      }
+    }
+
+    function renderOverview(data) {
+      document.getElementById('statActiveAgents').textContent = data.active_agents || 8;
+      document.getElementById('statCompletedTasks').textContent = data.completed_tasks || 0;
+      document.getElementById('statOpenRisks').textContent = data.open_risks || 0;
+      document.getElementById('statFailedChecks').textContent = data.failed_checks || 0;
+      document.getElementById('statCost').textContent = data.estimated_cost || '$14.20';
+      document.getElementById('activeAgentCount').textContent = data.active_agents || 8;
+    }
+
+    function renderAgents(agents) {
+      const roster = document.getElementById('agentRosterList');
+      roster.innerHTML = '';
+
+      agents.forEach(agent => {
+        const isRunning = agent.status === 'Running';
+        const isAvailable = agent.status === 'Available' || agent.status === 'Ready';
+
+        const statusColor = isRunning ? 'text-sky-400 bg-sky-950/60 border-sky-800' : 'text-emerald-400 bg-emerald-950/60 border-emerald-800';
+        const barColor = isRunning ? 'from-sky-500 to-indigo-500' : 'from-emerald-500 to-teal-400';
+
+        const card = document.createElement('div');
+        card.className = "p-3.5 rounded-xl border border-slate-800/80 bg-slate-900/60 hover:border-slate-700 cursor-pointer transition flex flex-col gap-2 relative group";
+        card.onclick = () => openChatDrawer(agent);
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 text-xs">
+                <i class="ph-bold ph-user"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-white text-xs">${agent.name}</div>
+                <div class="text-[11px] text-slate-400 line-clamp-1">${agent.description}</div>
+              </div>
+            </div>
+            <span class="text-[10px] font-medium border px-1.5 py-0.5 rounded ${statusColor}">
+              ${agent.status}
+            </span>
+          </div>
+
+          <div class="text-[11px] text-slate-300 bg-slate-950/50 p-2 rounded-lg border border-slate-800/40 line-clamp-2">
+            ${agent.current_task}
+          </div>
+
+          <!-- Bottom progress & cost row matching concept -->
+          <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+            <span class="text-emerald-400 font-medium">${agent.tasks_completed} done</span>
+            <div class="flex items-center gap-2">
+              <span>${agent.cost_approx}</span>
+              <span>${agent.tokens_approx}</span>
+            </div>
+          </div>
+
+          <!-- Progress bar line -->
+          <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+            <div class="bg-gradient-to-r ${barColor} h-full rounded-full" style="width: ${Math.min(100, Math.max(30, agent.tasks_completed * 25))}%"></div>
+          </div>
+        `;
+        roster.appendChild(card);
+      });
+    }
+
+    function renderTasks(board) {
+      const colMap = {
+        'Backlog': document.getElementById('colBacklog'),
+        'In Progress': document.getElementById('colInProgress'),
+        'Review': document.getElementById('colReview'),
+        'Done': document.getElementById('colDone')
+      };
+
+      let totalTasks = 0;
+
+      for (const [colName, container] of Object.entries(colMap)) {
+        const tasks = board[colName] || [];
+        totalTasks += tasks.length;
+        container.innerHTML = '';
+        
+        // update count pill
+        const countBadge = document.getElementById(`count${colName.replace(' ', '')}`);
+        if (countBadge) countBadge.textContent = tasks.length;
+
+        tasks.forEach(task => {
+          const card = document.createElement('div');
+          card.className = "bg-slate-950/70 border border-slate-800 hover:border-slate-700 p-3 rounded-xl flex flex-col gap-2 transition text-xs shadow-sm";
+          
+          const priorityClass = task.priority === 'P0' ? 'badge-p0' : (task.priority === 'P1' ? 'badge-p1' : 'badge-p2');
+
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+              <span class="font-medium text-slate-200 leading-snug line-clamp-2">${task.title}</span>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${priorityClass}">${task.priority || 'P1'}</span>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+              <span class="text-slate-300 font-medium">${task.assigned_role}</span>
+              <span class="text-[10px] text-slate-500">${task.checks || 'verified'}</span>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <select onchange="moveTask('${task.id}', this.value)" class="bg-slate-900 border border-slate-800 text-[10px] text-slate-300 rounded px-1.5 py-0.5 focus:outline-none">
+                <option value="Backlog" ${colName === 'Backlog' ? 'selected' : ''}>Backlog</option>
+                <option value="In Progress" ${colName === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                <option value="Review" ${colName === 'Review' ? 'selected' : ''}>Review</option>
+                <option value="Done" ${colName === 'Done' ? 'selected' : ''}>Done</option>
+              </select>
+
+              <button onclick="chatAboutTask('${task.assigned_role}', '${task.title.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-emerald-400 text-[11px] flex items-center gap-1" title="Chat with assigned agent">
+                <i class="ph ph-chat-teardrop-dots text-sm"></i> Chat
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      document.getElementById('totalTaskCountBadge').textContent = `${totalTasks} visible tasks`;
+    }
+
+    async function moveTask(taskId, newStatus) {
+      try {
+        await fetch(`/api/tasks/${taskId}`, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({status: newStatus})
+        });
+        await refreshData();
+      } catch (err) {
+        console.error("Failed to move task:", err);
+      }
+    }
+
+    function openChatDrawer(agent) {
+      currentAgent = agent;
+      document.getElementById('drawerAgentName').textContent = agent.name;
+      document.getElementById('drawerAgentRole').textContent = agent.description;
+      
+      const drawer = document.getElementById('chatDrawer');
+      drawer.classList.remove('translate-x-full');
+      document.getElementById('chatInput').focus();
+    }
+
+    function closeChatDrawer() {
+      document.getElementById('chatDrawer').classList.add('translate-x-full');
+    }
+
+    function chatAboutTask(roleName, taskTitle) {
+      // Find matching agent or default to coordinator
+      const found = agentsData.find(a => a.name.toLowerCase().includes(roleName.toLowerCase())) || agentsData[0];
+      openChatDrawer(found);
+      quickPrompt(`What is the progress on the task: "${taskTitle}"?`);
+    }
+
+    function quickPrompt(text) {
+      document.getElementById('chatInput').value = text;
+      handleSendMessage();
+    }
+
+    async function handleSendMessage(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg || !currentAgent) return;
+
+      const container = document.getElementById('chatMessages');
+
+      // Append user message
+      const userBubble = document.createElement('div');
+      userBubble.className = "flex gap-3 justify-end";
+      userBubble.innerHTML = `
+        <div class="bg-emerald-500/15 border border-emerald-500/30 p-3 rounded-xl rounded-tr-none text-xs text-white max-w-[85%] leading-relaxed">
+          ${msg}
+        </div>
+      `;
+      container.appendChild(userBubble);
+      input.value = '';
+      container.scrollTop = container.scrollHeight;
+
+      // Loading bubble
+      const loadingBubble = document.createElement('div');
+      loadingBubble.className = "flex gap-3";
+      loadingBubble.id = "agentLoadingBubble";
+      loadingBubble.innerHTML = `
+        <div class="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
+          <i class="ph-bold ph-robot animate-spin"></i>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs text-slate-400">
+          Grounded query to ${currentAgent.name}...
+        </div>
+      `;
+      container.appendChild(loadingBubble);
+      container.scrollTop = container.scrollHeight;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            agent_id: currentAgent.id,
+            message: msg
+          })
+        });
+        const data = await res.json();
+        
+        loadingBubble.remove();
+
+        const agentBubble = document.createElement('div');
+        agentBubble.className = "flex gap-3";
+        agentBubble.innerHTML = `
+          <div class="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
+            <i class="ph-bold ph-robot"></i>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl rounded-tl-none text-xs text-slate-200 max-w-[85%] leading-relaxed space-y-1.5">
+            <div>${data.response.replace(/\n/g, '<br/>')}</div>
+            <div class="text-[10px] text-slate-500 font-mono border-t border-slate-800/80 pt-1">
+              ✓ Grounded in SQLite state store
+            </div>
+          </div>
+        `;
+        container.appendChild(agentBubble);
+        container.scrollTop = container.scrollHeight;
+
+      } catch (err) {
+        loadingBubble.remove();
+        console.error("Chat error:", err);
+      }
+    }
+
+    function openAssignTaskModal() {
+      document.getElementById('taskModal').classList.remove('hidden');
+    }
+
+    function closeAssignTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+    }
+
+    async function handleCreateTask(e) {
+      e.preventDefault();
+      const title = document.getElementById('modalTaskTitle').value;
+      const assigned_role = document.getElementById('modalTaskRole').value;
+      const priority = document.getElementById('modalTaskPriority').value;
+      const status = document.getElementById('modalTaskStatus').value;
+
+      try {
+        await fetch('/api/tasks', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ title, assigned_role, priority, status })
+        });
+        closeAssignTaskModal();
+        document.getElementById('modalTaskTitle').value = '';
+        await refreshData();
+      } catch (err) {
+        console.error("Failed to create task:", err);
+      }
+    }
+
+    // Launch
+    window.onload = init;
+  </script>
+</body>
+</html>

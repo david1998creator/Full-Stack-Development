@@ -1,0 +1,53 @@
+--- a/src/persistent_crewai/persistence/state_manager.py
++++ b/src/persistent_crewai/persistence/state_manager.py
+@@ -1030,6 +1030,24 @@ class StateManager:
+     # -------------------------------------------------------------------------
+     # Execution Traces & Operational Events
+     # -------------------------------------------------------------------------
++    def _ensure_system_run(self, conn: sqlite3.Connection, now: str) -> None:
++        """Guarantee that self.project_id and 'system_run' exist for FK compliance."""
++        conn.execute(
++            """
++            INSERT OR IGNORE INTO projects (project_id, name, description, root_path, integrity_mode, status, created_at, updated_at, metadata_json)
++            VALUES (?, ?, 'Auto-created operational workspace', ?, 'development', 'active', ?, ?, '{}')
++            """,
++            (self.project_id, self.project_id, str(self.workspace_root), now, now),
++        )
++        conn.execute(
++            """
++            INSERT OR IGNORE INTO workflow_runs (run_id, project_id, workflow_type, trigger_source, input_prompt, status, started_at)
++            VALUES ('system_run', ?, 'system', 'cli', 'System operational traces', 'running', ?)
++            """,
++            (self.project_id, now),
++        )
++
+     def record_trace(
+         self,
+         run_id: str,
+@@ -1050,6 +1068,9 @@ class StateManager:
+         payload_str = payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False, default=str)
+ 
+         with self.connection() as conn:
++            if run_id == "system_run":
++                self._ensure_system_run(conn, now)
++
+             conn.execute(
+                 """
+                 INSERT INTO execution_traces (trace_id, run_id, task_id, agent_role, event_type, tool_name, payload, timestamp)
+@@ -1068,7 +1089,14 @@ class StateManager:
+         agent_role: Optional[str] = None,
+         tool_name: Optional[str] = None,
+     ) -> str:
+-        """Record general operational or audit event."""
++        """Record general operational or audit event. Guarantees 'system_run' FK presence."""
+         rid = run_id or "system_run"
+         role = agent_role or "System"
+-        return self.record_trace(run_id=rid, task_id=task_id, agent_role=role, event_type=event_type, payload=payload, tool_name=tool_name)
++        return self.record_trace(
++            run_id=rid,
++            task_id=task_id,
++            agent_role=role,
++            event_type=event_type,
++            payload=payload,
++            tool_name=tool_name,
++        )

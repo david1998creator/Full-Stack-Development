@@ -1,0 +1,11 @@
+# Core Agent Framework
+crewai>=1.15.0,<2.0.0
+pydantic>=2.0.0,<3.0.0
+
+# CLI, Styling & Config
+rich>=13.0.0
+click>=8.0.0
+python-dotenv>=1.0.0
+
+# Network & Adapters
+requests>=2.31.0

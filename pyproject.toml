@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "persistent-crewai"
+version = "0.1.0"
+description = "Persistent multi-agent software engineering framework using CrewAI with state memory and GitHub coordination"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Engineering Team", email = "crewai-team@local.domain" }
+]
+keywords = ["crewai", "multi-agent", "persistence", "sqlite", "github-automation", "state-machine"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+    "crewai>=1.15.0,<2.0.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "rich>=13.0.0",
+    "click>=8.0.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.12.0",
+]
+live = [
+    "openai>=1.0.0",
+    "anthropic>=0.30.0",
+    "google-genai>=1.0.0",
+]
+
+[project.scripts]
+crewai-team = "persistent_crewai.cli.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["persistent_crewai*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.sql", "*.json", "*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v --strict-markers"
+markers = [
+    "unit: fast unit tests",
+    "integration: multi-component integration tests",
+    "e2e: end-to-end multi-agent scenario tests",
+]

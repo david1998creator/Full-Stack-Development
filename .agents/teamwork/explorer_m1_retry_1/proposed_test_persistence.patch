@@ -1,0 +1,46 @@
+--- a/tests/test_persistence.py
++++ b/tests/test_persistence.py
+@@ -372,6 +372,40 @@ class TestStateManager(unittest.TestCase):
+         self.assertIn("metrics", dash)
+         self.assertEqual(dash["metrics"]["agents_total"], 8)
+ 
++    def test_record_event_guarantees_system_run_atomically(self):
++        """TC-SM-09: record_event guarantees 'system_run' and project presence atomically without prior run_id."""
++        # 1. Cold start: record_event without prior create_project or workflow_run
++        trace_id1 = self.sm.record_event("system_boot", {"stage": "init"})
++        self.assertTrue(trace_id1.startswith("trc_"))
++
++        # Verify system_run workflow run and project exist
++        sys_run = self.sm.get_workflow_run("system_run")
++        self.assertIsNotNone(sys_run)
++        self.assertEqual(sys_run["run_id"], "system_run")
++        self.assertEqual(sys_run["status"], "running")
++
++        # Verify trace is recorded and retrievable
++        traces = self.sm.list_traces(run_id="system_run")
++        self.assertEqual(len(traces), 1)
++        self.assertEqual(traces[0]["event_type"], "system_boot")
++        self.assertEqual(traces[0]["payload"], {"stage": "init"})
++
++        # 2. Call record_event with established project and positional PROJECT.md contract
++        self.sm.create_project("test_sm_proj", "Test Proj", "Desc")
++        trace_id2 = self.sm.record_event("tool_event", {"tool": "file_reader", "bytes": 1024})
++        self.assertTrue(trace_id2.startswith("trc_"))
++
++        # 3. Call record_event with optional role and tool_name
++        trace_id3 = self.sm.record_event(
++            event_type="git_commit",
++            payload={"hash": "abcdef123"},
++            agent_role="GitHub Manager",
++            tool_name="git_adapter",
++        )
++        self.assertTrue(trace_id3.startswith("trc_"))
++
++        all_traces = self.sm.list_traces(run_id="system_run")
++        self.assertEqual(len(all_traces), 3)
++        self.assertEqual(all_traces[2]["agent_role"], "GitHub Manager")
++        self.assertEqual(all_traces[2]["tool_name"], "git_adapter")
++
+ 
+ class TestVectorStoreAndEmbeddings(unittest.TestCase):
+     """Unit tests for DeterministicHashEmbeddingProvider and SQLiteVectorStore."""
