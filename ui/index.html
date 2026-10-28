@@ -151,11 +151,17 @@
             <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">WORKSPACE</div>
             <h1 class="text-xl font-bold text-white tracking-tight" id="workspaceNameTitle">Persistent CrewAI SDLC</h1>
           </div>
-          <div class="flex items-center gap-2 text-xs bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300">
-            <span>Delivery confidence:</span>
-            <span class="text-emerald-400 font-semibold flex items-center gap-1.5">
-              <i class="ph-fill ph-check-circle text-emerald-400"></i> High Confidence
-            </span>
+          <div class="flex items-center gap-2">
+            <button onclick="openKeyHelpModal()" class="flex items-center gap-1.5 text-xs bg-emerald-950/60 border border-emerald-700/50 hover:border-emerald-500 px-3 py-1.5 rounded-lg text-emerald-300 transition-colors shadow-sm cursor-pointer" title="View supported free API keys">
+              <i class="ph ph-sparkle text-emerald-400"></i>
+              <span>100% Free Keys Supported</span>
+            </button>
+            <div class="flex items-center gap-2 text-xs bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300">
+              <span>Delivery confidence:</span>
+              <span class="text-emerald-400 font-semibold flex items-center gap-1.5">
+                <i class="ph-fill ph-check-circle text-emerald-400"></i> High Confidence
+              </span>
+            </div>
           </div>
         </div>
 
@@ -232,7 +238,7 @@
       <div id="bannerUpfrontStatus" class="mb-3 px-4 py-2.5 bg-sky-950/40 border border-sky-800/60 rounded-xl text-xs flex items-center justify-between text-sky-200 shadow-sm">
         <div class="flex items-center gap-2.5">
           <i class="ph ph-info text-sky-400 text-base shrink-0"></i>
-          <span><strong>Autonomous SDLC:</strong> Architect &amp; Coordinator are decomposing requirements (~2 mins). Stay nearby if you'd like to customize the database schema or review the token budget before implementation begins.</span>
+          <span><strong>Autonomous SDLC:</strong> Architect &amp; Coordinator are decomposing requirements (~2 mins). <a href="javascript:void(0)" onclick="openKeyHelpModal()" class="underline text-emerald-300 hover:text-emerald-200 font-semibold">100% Free API keys supported (Gemini &amp; Groq).</a> Stay nearby if you'd like to review the token budget before implementation begins.</span>
         </div>
         <button onclick="document.getElementById('bannerUpfrontStatus').style.display='none'" class="text-sky-400 hover:text-white ml-3 text-sm" title="Dismiss">
           <i class="ph ph-x"></i>
@@ -779,6 +785,85 @@
     </div>
   </div>
 
+  <!-- SUPPORTED KEYS & 100% FREE OPTIONS MODAL -->
+  <div id="modalKeyHelp" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl flex flex-col space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <i class="ph ph-key text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Supported LLM Keys & Free Tier Options</h3>
+            <p class="text-xs text-slate-400">Configure any one of these keys in your <code class="text-emerald-400">.env</code> file</p>
+          </div>
+        </div>
+        <button onclick="closeKeyHelpModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <i class="ph ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1 text-xs">
+        <!-- Gemini Card -->
+        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white text-sm">Google Gemini</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold text-[10px]">100% FREE</span>
+            </div>
+            <p class="text-slate-400 mt-1">Generous free tier (15 RPM / 1M TPM). Ideal for Coordinator, Architect, and Database modeling.</p>
+            <code class="text-sky-300 text-[11px] block mt-1">GEMINI_API_KEY=...</code>
+          </div>
+          <a href="https://aistudio.google.com/app/api-keys" target="_blank" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-200 rounded-lg shrink-0 font-medium text-[11px]">Get Free Key</a>
+        </div>
+
+        <!-- Groq Card -->
+        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white text-sm">Groq Cloud</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold text-[10px]">100% FREE</span>
+            </div>
+            <p class="text-slate-400 mt-1">Ultra-fast sub-second Llama-3.3 70B & 8B inference for Developer, QA, and Security auditing.</p>
+            <code class="text-sky-300 text-[11px] block mt-1">GROQ_API_KEY=...</code>
+          </div>
+          <a href="https://console.groq.com/keys" target="_blank" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-200 rounded-lg shrink-0 font-medium text-[11px]">Get Free Key</a>
+        </div>
+
+        <!-- OpenRouter Card -->
+        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white text-sm">OpenRouter</span>
+              <span class="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-semibold text-[10px]">Free & Low Cost</span>
+            </div>
+            <p class="text-slate-400 mt-1">Deep coding reasoning with Qwen 2.5 Coder, DeepSeek R1/V3, or Claude 3.5 Sonnet.</p>
+            <code class="text-sky-300 text-[11px] block mt-1">OPENROUTER_API_KEY=...</code>
+          </div>
+          <a href="https://openrouter.ai/keys" target="_blank" class="px-2.5 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/50 text-sky-200 rounded-lg shrink-0 font-medium text-[11px]">Get Key</a>
+        </div>
+
+        <!-- Local Ollama Card -->
+        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white text-sm">Local Ollama</span>
+              <span class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-semibold text-[10px]">100% Offline & Free</span>
+            </div>
+            <p class="text-slate-400 mt-1">Run local models (Llama 3, CodeLlama) completely on your own GPU/CPU without sending data to the cloud.</p>
+            <code class="text-sky-300 text-[11px] block mt-1">OLLAMA_BASE_URL=http://localhost:11434</code>
+          </div>
+          <a href="https://ollama.ai" target="_blank" class="px-2.5 py-1.5 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/50 text-purple-200 rounded-lg shrink-0 font-medium text-[11px]">Download</a>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <span>💡 You only need <strong>one key</strong> to start running live!</span>
+        <button onclick="closeKeyHelpModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT APP LOGIC -->
   <script>
     let currentAgent = null;
@@ -1081,6 +1166,16 @@
 
     function closeTaskOutputModal() {
       document.getElementById('taskOutputModal').classList.add('hidden');
+    }
+
+    function openKeyHelpModal() {
+      const modal = document.getElementById('modalKeyHelp');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeKeyHelpModal() {
+      const modal = document.getElementById('modalKeyHelp');
+      if (modal) modal.classList.add('hidden');
     }
 
     async function runTaskCard(taskId) {

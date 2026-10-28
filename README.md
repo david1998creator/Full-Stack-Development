@@ -30,7 +30,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Your API Keys
+### 2. Configure Your API Keys (100% Free Options Available)
+
 Copy the provided environment template:
 ```bash
 # Windows:
@@ -38,12 +39,20 @@ copy .env.example .env
 # macOS / Linux:
 cp .env.example .env
 ```
-Open `.env` in any editor and paste your API key(s):
-- **Google Gemini** (Recommended for fast routing & planning): Get a key at [Google AI Studio](https://aistudio.google.com/app/api-keys).
-- **OpenRouter** (Recommended for deep code reasoning): Get a key at [OpenRouter](https://openrouter.ai/keys).
-- *(Optional)* **Groq** / **NVIDIA NIM** for ultra-fast failovers.
 
-> 💡 **Deterministic Offline Mode**: If no API keys are provided, the entire framework operates in 100% deterministic offline mock mode with built-in verification tests.
+You only need **ONE** active key to run live! The framework works with free options:
+
+| Provider | Supported Key | Tier / Cost | Get Free Key | Best For Roles |
+| :--- | :--- | :---: | :--- | :--- |
+| **Google Gemini** | `GEMINI_API_KEY` | 🟢 **100% FREE** | [Google AI Studio](https://aistudio.google.com/app/api-keys) | Coordinator, Architect, DB Engineer |
+| **Groq Cloud** | `GROQ_API_KEY` | 🟢 **100% FREE** | [Groq Console](https://console.groq.com/keys) | Ultra-fast Developer, QA & Security Auditor |
+| **OpenRouter** | `OPENROUTER_API_KEY` | 🟢 **Free & Low-Cost** | [OpenRouter Keys](https://openrouter.ai/keys) | Deep coding (Qwen 2.5 Coder, DeepSeek R1) |
+| **Ollama (Local)** | `OLLAMA_BASE_URL` | 🟢 **100% FREE** | [Ollama.ai](https://ollama.ai) | 100% private on-device LLMs (No key needed) |
+| **NVIDIA NIM** | `NVIDIA_API_KEY` | 🟢 **Free Trial** | [NVIDIA Build](https://build.nvidia.com/) | High-speed Llama 3 models |
+| **OpenAI** | `OPENAI_API_KEY` | 💳 Paid Standard | [OpenAI Platform](https://platform.openai.com/api-keys) | GPT-4o, GPT-4o-mini |
+| **Deterministic Mock** | `--mock` flag | 🟢 **Zero Keys** | Built-in | 100% offline testing, CI, and free exploration |
+
+> 💡 **Tip:** Both **Google Gemini** and **Groq** provide generous **100% free tiers** with zero credit card required. If you want to test the full pipeline without spending any money, paste a free key from either provider into `.env`!
 
 ### 3. Launch the Web Control Console
 ```bash

@@ -5,7 +5,7 @@ You are working in the **Persistent CrewAI 10-Role Autonomous SDLC Framework**.
 ## Step 0: Pre-Flight Key Check
 When the user requests an autonomous build or asks to run the framework:
 1. Verify if `.env` exists in the repository root.
-2. If missing, prompt the user to configure their API keys (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`) from `.env.example`.
+2. If missing, prompt the user to configure at least one API key from `.env.example`. Highlight that 100% FREE keys with no credit card are available via Google AI Studio (`GEMINI_API_KEY`) and Groq (`GROQ_API_KEY`).
 3. If they want an offline test, remind them that `--mock` mode runs with 100% free deterministic mocks.
 
 ## Execution Rules

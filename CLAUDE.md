@@ -7,7 +7,12 @@ Welcome Claude! You are orchestrating the **Persistent CrewAI 10-Role Software E
 ## 🚨 MANDATORY STEP 0: API KEY & ENVIRONMENT CHECK
 Before executing any build, check if `.env` exists in the project root:
 - If `.env` is **missing** or has no keys, politely stop and prompt the user:
-  > *"Before we run autonomous builds, please set up your `.env` file with your API keys (e.g. `GEMINI_API_KEY`, `GROQ_API_KEY`, or `OPENROUTER_API_KEY`). If you prefer to test offline for free, ask me to run with the `--mock` flag."*
+  > *"Before we run autonomous builds, please configure at least one API key in `.env` (copied from `.env.example`).*  
+  > *🟢 **100% Free Keys Available:**  
+  > - **Google Gemini** (`GEMINI_API_KEY`): https://aistudio.google.com/app/api-keys  
+  > - **Groq Cloud** (`GROQ_API_KEY`): https://console.groq.com/keys  
+  > - **Ollama** (`OLLAMA_BASE_URL`): Local & offline at http://localhost:11434  
+  > (If you want to test offline for free without any keys, tell me to run with `--mock`)."*
 
 ---
 

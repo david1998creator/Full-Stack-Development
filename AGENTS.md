@@ -11,8 +11,15 @@
    - Look in the workspace root for `.env`.
    - If `.env` is **missing** or contains no keys:
      > **Prompt the user immediately:**  
-     > *"Welcome to Persistent CrewAI! Before we can run real autonomous builds, please create a `.env` file from `.env.example` and supply your API key(s). Supported providers: `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, or `NVIDIA_API_KEY`.  
-     > (If you want to run offline tests or explore the interface without spending tokens, let me know and I can run in deterministic `--mock` mode)."*
+     > *"Welcome to Persistent CrewAI! Before we can run real autonomous builds, please configure at least one API key in `.env` (copied from `.env.example`).*  
+     >  
+     > *🟢 **100% Free Keys Available (No Credit Card Required):**  
+     > - **Google Gemini** (`GEMINI_API_KEY`): Free key at https://aistudio.google.com/app/api-keys  
+     > - **Groq Cloud** (`GROQ_API_KEY`): Free ultra-fast Llama 3 at https://console.groq.com/keys  
+     > - **Local Ollama** (`OLLAMA_BASE_URL`): Free local offline models at http://localhost:11434  
+     > - **OpenRouter** (`OPENROUTER_API_KEY`): Free & low-cost models at https://openrouter.ai/keys  
+     >  
+     > (If you want to test offline for free without any keys at all, tell me to run with the `--mock` flag)."*
    - **DO NOT** attempt a live build without an API key, as runtime execution will halt with a `RuntimeError`.
 
 2. **Verify Python Environment:**
