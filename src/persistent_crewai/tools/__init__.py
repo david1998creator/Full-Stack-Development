@@ -504,6 +504,10 @@ def get_agent_tools(
         return [reader, lister, writer, decision_tool, memory_tool]
     elif canonical_role == "Coordinator":
         return [lister, memory_tool, milestone_tool]
+    elif canonical_role == "Database Engineer":
+        return [reader, writer, lister, decision_tool, memory_tool]
+    elif canonical_role == "Security Auditor":
+        return [reader, lister, decision_tool, memory_tool]
     else:
         raise KeyError(f"No tool mapping defined for role '{role}'")
 

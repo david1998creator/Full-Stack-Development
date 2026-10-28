@@ -159,6 +159,24 @@ CANONICAL_ROLE_RESPONSES: Dict[str, str] = {
         "- Vector Index: Semantic memory and document embeddings indexed for similarity search.\n"
         "- Session Durability: Crash-resilient, ready for cross-session resumption."
     ),
+    "Database Engineer": (
+        "Final Answer: ### Database Engineering & Schema DDL Specification\n"
+        "- Database Engine: SQLite 3 / PostgreSQL relational architecture.\n"
+        "- Tables & Constraints:\n"
+        "  * Authoritative schema DDL defined with strict primary keys and foreign keys.\n"
+        "  * B-tree indexes generated on high-cardinality lookup columns.\n"
+        "  * Seed data fixtures and migration files authored in workspace.\n"
+        "- Data Integrity: Verified ACID compliance, idempotent creation, and zero orphaned records."
+    ),
+    "Security Auditor": (
+        "Final Answer: ### Application Security & SAST Audit Report\n"
+        "- Vulnerability Scope: OWASP Top 10, SQLi, XSS, Path Traversal, Hardcoded Secrets.\n"
+        "- Audit Results:\n"
+        "  * Parameterized Queries: 100% compliant, zero dynamic string interpolation in SQL.\n"
+        "  * Input Sanitization: Strong validation on all external parameters.\n"
+        "  * Secret Hygiene: Zero committed API keys, tokens, or private credentials.\n"
+        "- Security Clearance: PASSED. Safe for production milestone advancement."
+    ),
 }
 
 # Role keyword matching rules for dynamic prompt classification
@@ -168,9 +186,11 @@ ROLE_KEYWORD_RULES = [
     ("Coordinator", ["coordinator", "project manager", "engineering manager", "manager", "wbs", "backlog", "project status", "status of the project", "orchestrat"]),
     ("Architect", ["architect", "database design", "db design", "schema", "adr", "architecture", "blueprint", "data model", "sqlite", "wal"]),
     ("Designer", ["designer", "ui/ux", "ui", "ux", "design system", "tokens", "tui", "wireframe", "styling", "typography"]),
+    ("Database Engineer", ["database engineer", "database", "sql ddl", "migration", "indexes", "seed fixtures", "foreign key", "relational schema"]),
     ("Developer", ["developer", "software engineer", "implement", "coding", "python", "module", "bugfix", "refactor"]),
     ("Tester", ["tester", "sdet", "qa", "pytest", "unit test", "integration test", "e2e test", "coverage", "regression"]),
-    ("Reviewer", ["reviewer", "code review", "security audit", "pep-8", "owasp", "approved", "compliance"]),
+    ("Security Auditor", ["security auditor", "security", "sast", "cve", "owasp", "vulnerability audit", "secret scan"]),
+    ("Reviewer", ["reviewer", "code review", "security audit", "pep-8", "approved", "compliance"]),
 ]
 
 
@@ -509,9 +529,11 @@ def get_llm(
     Raises:
         ValueError: If an explicit provider is requested but its credentials are missing, or if provider is unsupported.
     """
-    # 1. Force Mock via Environment Variables (CI / Test mode)
-    if os.environ.get("MOCK_LLM", "").lower() in ("true", "1", "yes") or \
-       os.environ.get("CREWAI_MOCK_LLM", "").lower() in ("true", "1", "yes"):
+    # 1. Force Mock via Environment Variables (CI / Test mode) when provider is not explicitly requested
+    if not provider and (
+        os.environ.get("MOCK_LLM", "").lower() in ("true", "1", "yes") or
+        os.environ.get("CREWAI_MOCK_LLM", "").lower() in ("true", "1", "yes")
+    ):
         logger.info("Initializing DeterministicMockLLM (forced via environment flag).")
         return DeterministicMockLLM(model_name=model_name or "deterministic-mock-llm", temperature=0.0, **kwargs)
 

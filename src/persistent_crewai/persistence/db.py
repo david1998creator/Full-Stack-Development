@@ -192,6 +192,26 @@ CREATE TABLE IF NOT EXISTS token_ledger (
 CREATE INDEX IF NOT EXISTS idx_ledger_project ON token_ledger(project_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_ledger_agent ON token_ledger(agent_role);
 CREATE INDEX IF NOT EXISTS idx_ledger_provider ON token_ledger(provider);
+
+-- 10. Pending Actions: Human-in-the-Loop decision queue
+CREATE TABLE IF NOT EXISTS pending_actions (
+    action_id VARCHAR(64) PRIMARY KEY,
+    project_id VARCHAR(64) NOT NULL REFERENCES projects(project_id) ON DELETE CASCADE,
+    agent_role VARCHAR(64) NOT NULL,
+    action_type VARCHAR(32) NOT NULL CHECK (action_type IN ('CONFIRMATION', 'BUDGET_APPROVAL', 'SECURITY_GATE', 'CLARIFICATION')),
+    title VARCHAR(255) NOT NULL,
+    prompt_text TEXT NOT NULL,
+    options_json TEXT NOT NULL DEFAULT '[]',
+    default_option VARCHAR(64),
+    timeout_seconds INTEGER DEFAULT 0,
+    status VARCHAR(32) DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'expired')),
+    selected_option VARCHAR(64),
+    user_feedback TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_actions_project ON pending_actions(project_id, status);
+CREATE INDEX IF NOT EXISTS idx_actions_created ON pending_actions(created_at DESC);
 """
 
 

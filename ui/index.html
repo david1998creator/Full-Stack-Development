@@ -8,6 +8,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Cytoscape.js Knowledge Graph CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
   <!-- Lucide icons via CDN or SVG helpers -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -90,12 +92,18 @@
       <div class="flex items-center gap-3 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg text-xs">
         <div class="flex items-center gap-1.5 text-slate-300">
           <i class="ph ph-users text-slate-400"></i>
-          <span><strong id="activeAgentCount">8</strong> agents</span>
+          <span><strong id="activeAgentCount">10</strong> agents</span>
         </div>
         <span class="text-emerald-400 font-semibold flex items-center gap-1">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 100%
         </span>
       </div>
+
+      <!-- HITL Drawer Notification Bell with Badge -->
+      <button id="btnNotificationBell" onclick="toggleHitlDrawer()" class="relative p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-slate-300 hover:text-amber-400 transition" title="Human-in-the-Loop Decision Center">
+        <i class="ph ph-bell text-base"></i>
+        <span id="badgePendingActions" class="absolute -top-1 -right-1 bg-amber-500 text-slate-950 font-bold text-[10px] rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center animate-pulse" style="display: none;">0</span>
+      </button>
 
       <!-- User avatar -->
       <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center font-semibold text-slate-950 text-xs shadow-md">
@@ -220,6 +228,17 @@
         </div>
       </div>
 
+      <!-- Upfront Status Notice Banner -->
+      <div id="bannerUpfrontStatus" class="mb-3 px-4 py-2.5 bg-sky-950/40 border border-sky-800/60 rounded-xl text-xs flex items-center justify-between text-sky-200 shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <i class="ph ph-info text-sky-400 text-base shrink-0"></i>
+          <span><strong>Autonomous SDLC:</strong> Architect &amp; Coordinator are decomposing requirements (~2 mins). Stay nearby if you'd like to customize the database schema or review the token budget before implementation begins.</span>
+        </div>
+        <button onclick="document.getElementById('bannerUpfrontStatus').style.display='none'" class="text-sky-400 hover:text-white ml-3 text-sm" title="Dismiss">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+
       <!-- PROJECT FLOW KANBAN BOARD -->
       <div class="flex-1 flex flex-col">
         <div class="flex items-center justify-between mb-3">
@@ -228,13 +247,19 @@
               <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">DELIVERY</div>
               <h2 class="text-base font-semibold text-white" id="deliveryViewTitle">Project flow</h2>
             </div>
-            <!-- Segmented View Switcher -->
+            <!-- Segmented View Switcher: 4 Tabs -->
             <div class="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs font-medium ml-2">
               <button id="btnSwitchKanban" onclick="switchDeliveryView('kanban')" class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 flex items-center gap-1.5 transition-all">
-                <i class="ph ph-kanban"></i> Project Flow (Kanban)
+                <i class="ph ph-kanban"></i> Project Flow
               </button>
               <button id="btnSwitchPipeline" onclick="switchDeliveryView('pipeline')" class="px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all">
-                <i class="ph ph-git-commit"></i> Live Agent Workspace
+                <i class="ph ph-git-commit"></i> Live Workspace
+              </button>
+              <button id="btnSwitchMilestones" onclick="switchDeliveryView('milestones')" class="px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all">
+                <i class="ph ph-flag"></i> Milestones
+              </button>
+              <button id="btnSwitchGraph" onclick="switchDeliveryView('graph')" class="px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all">
+                <i class="ph ph-share-network"></i> Knowledge Graph
               </button>
             </div>
           </div>
@@ -499,6 +524,100 @@
               </div>
             </div>
 
+          </div>
+        </div>
+
+        <!-- 3. MILESTONES ROADMAP TAB CONTAINER -->
+        <div id="viewMilestonesContainer" class="hidden flex-1 flex flex-col gap-4 overflow-hidden">
+          <!-- Overview Header Card -->
+          <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <i class="ph-bold ph-flag text-xl"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-bold text-white">Engineering Milestones Roadmap</h3>
+                  <span id="milestonesProgressBadge" class="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full">Phase 3 Active</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Deterministic criteria verification across 5 canonical SDLC delivery milestones</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-6">
+              <div class="text-right">
+                <div class="text-[10px] uppercase font-bold text-slate-400">Overall Completion</div>
+                <div class="text-xl font-bold text-white font-mono" id="milestonesOverallPercent">65%</div>
+              </div>
+              <div class="w-32 bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div id="milestonesOverallProgressBar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-2.5 rounded-full transition-all duration-500" style="width: 65%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Milestones Cards Grid / Timeline -->
+          <div class="flex-1 overflow-y-auto space-y-3 pr-1" id="milestonesListContainer">
+            <!-- Dynamically populated from /api/milestones -->
+          </div>
+        </div>
+
+        <!-- 4. CYTOSCAPE.JS KNOWLEDGE GRAPH TAB CONTAINER -->
+        <div id="viewGraphContainer" class="hidden flex-1 flex flex-col gap-3 overflow-hidden">
+          <!-- Graph Toolbar -->
+          <div class="glass-panel px-4 py-2.5 rounded-xl flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white flex items-center gap-1.5">
+                <i class="ph-bold ph-share-network text-cyan-400"></i> SQLite Knowledge Graph
+              </span>
+              <span class="text-slate-600">•</span>
+              <span class="text-slate-400" id="graphStatsBadge">27 Nodes | 26 Edges</span>
+            </div>
+
+            <!-- Graph Controls & Layout Switcher -->
+            <div class="flex items-center gap-2">
+              <div class="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-[11px]">
+                <button onclick="renderGraphLayout('cose')" class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">Physics (COSE)</button>
+                <button onclick="renderGraphLayout('circle')" class="px-2 py-0.5 text-slate-400 hover:text-white">Circle</button>
+                <button onclick="renderGraphLayout('breadthfirst')" class="px-2 py-0.5 text-slate-400 hover:text-white">Hierarchy</button>
+              </div>
+              <button onclick="fitGraphView()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center gap-1">
+                <i class="ph ph-corners-out"></i> Fit
+              </button>
+              <button onclick="loadMemoryGraph()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center gap-1">
+                <i class="ph ph-arrows-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Cytoscape Canvas & Node Details Split -->
+          <div class="flex-1 flex gap-3 overflow-hidden">
+            <!-- Canvas -->
+            <div id="cyCanvas" class="flex-1 bg-[#080d16] border border-slate-800/80 rounded-2xl overflow-hidden relative shadow-inner">
+              <div id="cyCanvasLoading" class="absolute inset-0 flex items-center justify-center text-slate-500 text-xs gap-2">
+                <i class="ph ph-circle-notch animate-spin text-lg text-cyan-400"></i> Initializing Knowledge Graph...
+              </div>
+            </div>
+
+            <!-- Node Inspector Side Panel -->
+            <div id="graphInspectorPanel" class="w-72 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between shrink-0">
+              <div>
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
+                  <h4 class="text-xs font-bold text-white uppercase tracking-wider">Node Details</h4>
+                  <span id="inspectNodeType" class="text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold bg-slate-800 text-slate-400">NONE</span>
+                </div>
+                <div id="inspectNodeContent" class="text-xs text-slate-400 space-y-2">
+                  <p class="text-slate-500 italic">Click any agent, ADR decision, milestone, or task in the graph to inspect persistent properties.</p>
+                </div>
+              </div>
+              
+              <!-- Graph Legend -->
+              <div class="pt-3 border-t border-slate-800/80 text-[10px] space-y-1 text-slate-400">
+                <div class="font-bold text-slate-300 mb-1">Entity Legend:</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Agent (10 Canonical Roles)</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> ADR Decision Record</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Milestone Phase</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Task / Artifact</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1382,22 +1501,48 @@
       currentDeliveryView = view;
       const kanbanView = document.getElementById('viewKanbanContainer');
       const pipelineView = document.getElementById('viewPipelineContainer');
+      const milestonesView = document.getElementById('viewMilestonesContainer');
+      const graphView = document.getElementById('viewGraphContainer');
+
       const btnKanban = document.getElementById('btnSwitchKanban');
       const btnPipeline = document.getElementById('btnSwitchPipeline');
+      const btnMilestones = document.getElementById('btnSwitchMilestones');
+      const btnGraph = document.getElementById('btnSwitchGraph');
       const title = document.getElementById('deliveryViewTitle');
 
+      // Reset all buttons
+      const inactiveClass = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all';
+      const activeClass = 'px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 flex items-center gap-1.5 transition-all';
+
+      btnKanban.className = inactiveClass;
+      btnPipeline.className = inactiveClass;
+      if (btnMilestones) btnMilestones.className = inactiveClass;
+      if (btnGraph) btnGraph.className = inactiveClass;
+
+      // Hide all containers
+      kanbanView.classList.add('hidden');
+      pipelineView.classList.add('hidden');
+      if (milestonesView) milestonesView.classList.add('hidden');
+      if (graphView) graphView.classList.add('hidden');
+
       if (view === 'pipeline') {
-        kanbanView.classList.add('hidden');
         pipelineView.classList.remove('hidden');
-        btnPipeline.className = 'px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 flex items-center gap-1.5 transition-all';
-        btnKanban.className = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all';
+        btnPipeline.className = activeClass;
         title.textContent = 'Live Agent Workspace';
         syncPipelineTelemetry();
+      } else if (view === 'milestones') {
+        if (milestonesView) milestonesView.classList.remove('hidden');
+        if (btnMilestones) btnMilestones.className = activeClass;
+        title.textContent = 'Milestones Roadmap';
+        loadMilestonesRoadmap();
+      } else if (view === 'graph') {
+        if (graphView) graphView.classList.remove('hidden');
+        if (btnGraph) btnGraph.className = activeClass;
+        title.textContent = 'Knowledge Graph';
+        setTimeout(() => loadMemoryGraph(), 100);
       } else {
-        pipelineView.classList.add('hidden');
         kanbanView.classList.remove('hidden');
-        btnKanban.className = 'px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 flex items-center gap-1.5 transition-all';
-        btnPipeline.className = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all';
+        btnKanban.className = activeClass;
         title.textContent = 'Project flow';
       }
     }
@@ -1555,15 +1700,490 @@
       openChatDrawer(agentObj);
     }
 
+    // =========================================================================
+    // HITL DECISION CENTER (CONCEPT C) & HYBRID GOVERNANCE
+    // =========================================================================
+    let activeTimers = {};
+
+    function toggleHitlDrawer(show) {
+      const drawer = document.getElementById('hitlDrawer');
+      const backdrop = document.getElementById('hitlDrawerBackdrop');
+      if (!drawer || !backdrop) return;
+
+      const shouldOpen = show !== undefined ? show : drawer.classList.contains('translate-x-full');
+      if (shouldOpen) {
+        backdrop.classList.remove('hidden');
+        setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+        drawer.classList.remove('translate-x-full');
+        syncPendingActions();
+      } else {
+        backdrop.classList.add('opacity-0');
+        drawer.classList.add('translate-x-full');
+        setTimeout(() => backdrop.classList.add('hidden'), 300);
+      }
+    }
+
+    async function syncPendingActions() {
+      try {
+        const projectParam = (currentSelectedProject && currentSelectedProject !== 'all') 
+          ? `?project_id=${encodeURIComponent(currentSelectedProject)}` 
+          : '';
+        const res = await fetch('/api/actions/pending' + projectParam);
+        const data = await res.json();
+        const actions = data.actions || [];
+        const count = actions.length;
+
+        // Update Notification Bell badge
+        const badge = document.getElementById('badgePendingActions');
+        if (badge) {
+          if (count > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = count;
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+
+        // Update Drawer Header badge
+        const drawerBadge = document.getElementById('hitlDrawerBadge');
+        if (drawerBadge) {
+          drawerBadge.textContent = `${count} PENDING`;
+        }
+
+        // Render Cards in Container
+        const container = document.getElementById('hitlActionsContainer');
+        if (!container) return;
+
+        if (count === 0) {
+          container.innerHTML = `
+            <div class="p-8 text-center text-slate-500 flex flex-col items-center">
+              <div class="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
+                <i class="ph ph-check-circle text-2xl"></i>
+              </div>
+              <div class="text-xs font-semibold text-slate-300">All Quality Gates Clear</div>
+              <p class="text-[11px] text-slate-500 mt-1 max-w-[260px]">The 10-agent pipeline is executing autonomously. Financial approvals & preference gates will appear here as triggered.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = '';
+        actions.forEach(act => {
+          const card = document.createElement('div');
+          card.className = "bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3 shadow-lg relative overflow-hidden";
+
+          const isFinancial = act.action_type === 'BUDGET_APPROVAL';
+          const hasTimeout = act.timeout_seconds && act.timeout_seconds > 0;
+
+          let gateBadgeHtml = isFinancial
+            ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">PAUSED FOR HUMAN (No Expiry)</span>`
+            : `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">PREFERENCE GATE</span>`;
+
+          let timerHtml = '';
+          if (hasTimeout) {
+            timerHtml = `
+              <div class="space-y-1 pt-1">
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div id="tbar_${act.action_id}" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-1.5 transition-all duration-1000" style="width: 100%;"></div>
+                </div>
+                <div class="text-[10px] text-slate-400 flex items-center justify-between">
+                  <span>Auto-selecting [<strong>${act.default_option || 'Default'}</strong>]</span>
+                  <span id="ttxt_${act.action_id}" class="font-mono text-cyan-300 font-bold">02:00</span>
+                </div>
+              </div>
+            `;
+          }
+
+          let optionsHtml = (act.options || []).map((opt, oIdx) => {
+            const isPrimary = oIdx === 0;
+            const btnClass = isPrimary
+              ? "flex-1 px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold text-xs transition-all"
+              : "px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium text-xs transition-all";
+            return `<button onclick="resolveHitlAction('${act.action_id}', '${opt}')" class="${btnClass}">${opt}</button>`;
+          }).join('');
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                <i class="ph-bold ${isFinancial ? 'ph-shield-warning text-amber-400' : 'ph-sliders-horizontal text-cyan-400'}"></i>
+                ${act.agent_role} Dispatch
+              </span>
+              ${gateBadgeHtml}
+            </div>
+            <div>
+              <h4 class="font-bold text-white text-xs mb-1">${act.title}</h4>
+              <p class="text-[11px] text-slate-300 leading-relaxed">${act.prompt_text}</p>
+            </div>
+            ${timerHtml}
+            <div class="flex items-center gap-2 pt-1 flex-wrap">
+              ${optionsHtml}
+            </div>
+          `;
+          container.appendChild(card);
+
+          // Setup countdown timer for workflow preference gates
+          if (hasTimeout && !activeTimers[act.action_id]) {
+            let remaining = act.timeout_seconds;
+            activeTimers[act.action_id] = setInterval(() => {
+              remaining--;
+              const bar = document.getElementById(`tbar_${act.action_id}`);
+              const txt = document.getElementById(`ttxt_${act.action_id}`);
+              if (bar && txt) {
+                const pct = Math.max(0, (remaining / act.timeout_seconds) * 100);
+                bar.style.width = pct + '%';
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                txt.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+              }
+              if (remaining <= 0) {
+                clearInterval(activeTimers[act.action_id]);
+                delete activeTimers[act.action_id];
+                resolveHitlAction(act.action_id, act.default_option || (act.options && act.options[0]) || 'Approved');
+              }
+            }, 1000);
+          }
+        });
+      } catch (err) {
+        console.error("Failed to sync pending actions:", err);
+      }
+    }
+
+    async function resolveHitlAction(actionId, selectedOption, userFeedback = '') {
+      if (activeTimers[actionId]) {
+        clearInterval(activeTimers[actionId]);
+        delete activeTimers[actionId];
+      }
+      try {
+        const res = await fetch(`/api/actions/${actionId}/resolve`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            selected_option: selectedOption,
+            user_feedback: userFeedback
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          syncPendingActions();
+          refreshData();
+        }
+      } catch (err) {
+        console.error("Failed to resolve action:", err);
+      }
+    }
+
+    async function triggerSimulatedBudgetGuard() {
+      try {
+        const targetSlug = (currentSelectedProject && currentSelectedProject !== 'all') ? currentSelectedProject : 'default_project';
+        const res = await fetch('/api/budget/estimate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            project_id: targetSlug,
+            task_description: 'Full-Stack Persistent CrewAI Application with SQLite & Cytoscape',
+            create_pending: true
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          toggleHitlDrawer(true);
+        }
+      } catch (err) {
+        console.error("Failed to trigger budget guard:", err);
+      }
+    }
+
+    // =========================================================================
+    // MILESTONES ROADMAP TAB
+    // =========================================================================
+    async function loadMilestonesRoadmap() {
+      const container = document.getElementById('milestonesListContainer');
+      if (!container) return;
+      container.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs"><i class="ph ph-circle-notch animate-spin text-lg text-amber-400 mb-2"></i><br/>Loading canonical SDLC milestones...</div>`;
+
+      try {
+        const projectParam = (currentSelectedProject && currentSelectedProject !== 'all') 
+          ? `?project_id=${encodeURIComponent(currentSelectedProject)}` 
+          : '';
+        const res = await fetch('/api/milestones' + projectParam);
+        const data = await res.json();
+        if (!data.success) return;
+
+        // Overall progress updates
+        const stats = data.stats || {};
+        const overallPct = stats.overall_progress_percent || 0;
+        const pctEl = document.getElementById('milestonesOverallPercent');
+        const barEl = document.getElementById('milestonesOverallProgressBar');
+        if (pctEl) pctEl.textContent = overallPct + '%';
+        if (barEl) barEl.style.width = overallPct + '%';
+
+        const badge = document.getElementById('milestonesProgressBadge');
+        if (badge) {
+          badge.textContent = `${stats.achieved || 0}/${stats.total || 5} Milestones Verified`;
+        }
+
+        container.innerHTML = '';
+        (data.milestones || []).forEach((m, idx) => {
+          const card = document.createElement('div');
+          const isAchieved = m.status === 'achieved';
+          const isInProgress = m.status === 'in_progress';
+
+          let statusBadge = '';
+          let borderClass = 'border-slate-800';
+          let progressBg = 'bg-slate-700';
+
+          if (isAchieved) {
+            statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1"><i class="ph-bold ph-check"></i> ACHIEVED</span>`;
+            borderClass = 'border-emerald-500/30';
+            progressBg = 'bg-emerald-400';
+          } else if (isInProgress) {
+            statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 animate-pulse"><i class="ph-bold ph-lightning"></i> IN PROGRESS</span>`;
+            borderClass = 'border-amber-500/40';
+            progressBg = 'bg-gradient-to-r from-amber-400 to-cyan-400';
+          } else {
+            statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">PENDING</span>`;
+          }
+
+          const criteriaHtml = (m.criteria || []).map(c => {
+            const isDone = typeof c === 'object' ? c.completed : isAchieved;
+            const text = typeof c === 'object' ? c.text : c;
+            return `
+              <li class="flex items-center gap-2 text-[11px] ${isDone ? 'text-slate-200' : 'text-slate-400'}">
+                <i class="ph-bold ${isDone ? 'ph-check-circle text-emerald-400' : 'ph-circle text-slate-600'} text-sm shrink-0"></i>
+                <span class="${isDone ? 'line-through text-slate-400/80' : ''}">${text}</span>
+              </li>
+            `;
+          }).join('');
+
+          card.className = `glass-panel ${borderClass} rounded-2xl p-4 space-y-3 shadow-md`;
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg ${isAchieved ? 'bg-emerald-500/15 text-emerald-400' : (isInProgress ? 'bg-amber-500/15 text-amber-400' : 'bg-slate-800 text-slate-500')} flex items-center justify-center font-bold text-xs">
+                  0${idx + 1}
+                </div>
+                <div>
+                  <h4 class="font-bold text-white text-sm">${m.title}</h4>
+                  <p class="text-[11px] text-slate-400">${m.description}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Lead: ${m.lead_role || 'Specialist'}</span>
+                ${statusBadge}
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                <span>Phase Progress</span>
+                <span class="font-bold text-white">${m.progress_percent || 0}%</span>
+              </div>
+              <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                <div class="${progressBg} h-1.5 rounded-full transition-all duration-500" style="width: ${m.progress_percent || 0}%;"></div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800/80">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Verification Criteria:</div>
+              <ul class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                ${criteriaHtml}
+              </ul>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Failed to load milestones:", err);
+      }
+    }
+
+    // =========================================================================
+    // CYTOSCAPE.JS KNOWLEDGE GRAPH TAB
+    // =========================================================================
+    let cyInstance = null;
+    let graphDataCache = null;
+
+    async function loadMemoryGraph(layoutName = 'cose') {
+      const container = document.getElementById('cyCanvas');
+      const loader = document.getElementById('cyCanvasLoading');
+      if (!container) return;
+
+      if (loader) loader.style.display = 'flex';
+
+      try {
+        const projectParam = (currentSelectedProject && currentSelectedProject !== 'all') 
+          ? `?project_id=${encodeURIComponent(currentSelectedProject)}` 
+          : '';
+        const res = await fetch('/api/graph/memory' + projectParam);
+        const data = await res.json();
+        if (!data.success) return;
+        graphDataCache = data;
+
+        const badge = document.getElementById('graphStatsBadge');
+        if (badge) {
+          badge.textContent = `${data.stats?.node_count || 0} Nodes | ${data.stats?.edge_count || 0} Edges`;
+        }
+
+        if (loader) loader.style.display = 'none';
+
+        if (typeof cytoscape === 'undefined') {
+          console.error("Cytoscape library not loaded");
+          return;
+        }
+
+        const elements = [
+          ...(data.elements.nodes || []),
+          ...(data.elements.edges || [])
+        ];
+
+        if (cyInstance) {
+          cyInstance.destroy();
+        }
+
+        cyInstance = cytoscape({
+          container: container,
+          elements: elements,
+          style: [
+            {
+              selector: 'node',
+              style: {
+                'label': 'data(label)',
+                'color': '#f8fafc',
+                'font-size': '10px',
+                'font-family': 'Inter, sans-serif',
+                'text-valign': 'center',
+                'text-halign': 'center',
+                'background-color': 'data(color)',
+                'border-width': 1.5,
+                'border-color': '#ffffff22',
+                'text-outline-color': '#0f172a',
+                'text-outline-width': 1.5,
+                'width': 115,
+                'height': 36,
+                'shape': 'roundrectangle'
+              }
+            },
+            {
+              selector: 'node[type="decision"]',
+              style: {
+                'shape': 'ellipse',
+                'width': 100,
+                'height': 36,
+                'background-color': '#a855f7'
+              }
+            },
+            {
+              selector: 'node[type="milestone"]',
+              style: {
+                'shape': 'diamond',
+                'width': 120,
+                'height': 44,
+                'background-color': '#eab308'
+              }
+            },
+            {
+              selector: 'edge',
+              style: {
+                'width': 1.5,
+                'line-color': 'data(color)',
+                'target-arrow-color': 'data(color)',
+                'target-arrow-shape': 'triangle',
+                'curve-style': 'bezier',
+                'label': 'data(label)',
+                'font-size': '8px',
+                'color': '#94a3b8',
+                'text-rotation': 'autorotate',
+                'text-background-opacity': 0.85,
+                'text-background-color': '#0b0f17',
+                'text-background-padding': 2
+              }
+            },
+            {
+              selector: 'node:selected',
+              style: {
+                'border-width': 3,
+                'border-color': '#38bdf8',
+                'shadow-blur': 12,
+                'shadow-color': '#38bdf8'
+              }
+            }
+          ],
+          layout: {
+            name: layoutName,
+            animate: true,
+            animationDuration: 600,
+            padding: 30
+          }
+        });
+
+        // Click handler to inspect nodes
+        cyInstance.on('tap', 'node', function(evt) {
+          const node = evt.target;
+          const d = node.data();
+          const typeBadge = document.getElementById('inspectNodeType');
+          const content = document.getElementById('inspectNodeContent');
+
+          if (typeBadge) {
+            typeBadge.textContent = (d.type || 'NODE').toUpperCase();
+            typeBadge.className = 'text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold bg-cyan-950 text-cyan-300 border border-cyan-800/60';
+          }
+
+          if (content) {
+            let metaHtml = '';
+            if (d.metadata && Object.keys(d.metadata).length > 0) {
+              metaHtml = `
+                <div class="mt-2 pt-2 border-t border-slate-800/80">
+                  <div class="text-[10px] font-bold uppercase text-slate-400 mb-1">Metadata:</div>
+                  <pre class="bg-slate-950 p-2 rounded text-[10px] font-mono text-slate-300 overflow-x-auto max-h-36">${JSON.stringify(d.metadata, null, 2)}</pre>
+                </div>
+              `;
+            }
+            content.innerHTML = `
+              <div class="space-y-1.5">
+                <div class="font-bold text-white text-xs">${d.label}</div>
+                <div class="text-[11px] text-slate-400 font-mono">ID: ${d.id}</div>
+                <div class="text-[11px] text-slate-400">Type: <span class="text-cyan-300 font-semibold">${d.type}</span></div>
+              </div>
+              ${metaHtml}
+            `;
+          }
+        });
+
+      } catch (err) {
+        console.error("Failed to load memory graph:", err);
+        if (loader) loader.innerHTML = `<span class="text-red-400">Failed to load graph: ${err.message}</span>`;
+      }
+    }
+
+    function renderGraphLayout(name) {
+      if (!cyInstance) return;
+      cyInstance.layout({
+        name: name,
+        animate: true,
+        animationDuration: 500,
+        padding: 30
+      }).run();
+    }
+
+    function fitGraphView() {
+      if (cyInstance) {
+        cyInstance.fit(30);
+      }
+    }
+
     // Launch
     window.onload = function() {
       init();
+      syncPendingActions();
       // Periodically sync pipeline telemetry every 4s
       setInterval(() => {
         if (currentDeliveryView === 'pipeline') {
           syncPipelineTelemetry();
         }
       }, 4000);
+      setInterval(() => {
+        syncPendingActions();
+      }, 8000);
     };
   </script>
 
@@ -1739,6 +2359,45 @@
       </button>
       <button onclick="closeTelemetryDrawer()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs">
         Close
+      </button>
+    </div>
+  </div>
+
+  <!-- HITL DECISION DRAWER (CONCEPT C) -->
+  <div id="hitlDrawerBackdrop" onclick="toggleHitlDrawer(false)" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 transition-opacity hidden opacity-0"></div>
+  <div id="hitlDrawer" class="fixed top-0 right-0 h-full w-full sm:w-[460px] bg-[#0d131f] border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
+    <!-- Drawer Header -->
+    <div class="h-16 px-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-lg">
+          <i class="ph-bold ph-hand-palm"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            HITL Decision Center
+            <span id="hitlDrawerBadge" class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono font-semibold">0 PENDING</span>
+          </h3>
+          <p class="text-xs text-slate-400">Human approvals, budget gates &amp; safe defaults</p>
+        </div>
+      </div>
+      <button onclick="toggleHitlDrawer(false)" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white">
+        <i class="ph ph-x text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Content -->
+    <div class="flex-1 overflow-y-auto p-5 space-y-4" id="hitlActionsContainer">
+      <!-- Dynamically populated actions -->
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="p-4 border-t border-slate-800 bg-slate-900/60 text-xs text-slate-400 flex items-center justify-between">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>ACID State: SQLite WAL</span>
+      </div>
+      <button onclick="triggerSimulatedBudgetGuard()" class="text-cyan-400 hover:text-cyan-300 font-medium hover:underline flex items-center gap-1 text-[11px]">
+        <i class="ph ph-lightning"></i> Test Budget Guard
       </button>
     </div>
   </div>

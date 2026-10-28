@@ -1388,3 +1388,101 @@ class StateManager:
             "by_agent": by_agent,
             "recent_calls": [dict(r) for r in recent_rows],
         }
+
+    # =========================================================================
+    # Human-in-the-Loop (HITL) Actions Queue
+    # =========================================================================
+    def create_pending_action(
+        self,
+        action_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        agent_role: str = "Coordinator",
+        action_type: str = "CONFIRMATION",
+        title: str = "",
+        prompt_text: str = "",
+        options: Optional[List[Dict[str, Any]]] = None,
+        default_option: Optional[str] = None,
+        timeout_seconds: int = 0,
+    ) -> Dict[str, Any]:
+        """Create a pending action requiring human review or decision."""
+        aid = action_id or f"act_{uuid.uuid4().hex[:12]}"
+        pid = project_id or self.project_id
+        opts_json = json.dumps(options or [], ensure_ascii=False)
+        now = _now_iso()
+
+        with self.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO pending_actions (
+                    action_id, project_id, agent_role, action_type, title,
+                    prompt_text, options_json, default_option, timeout_seconds,
+                    status, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+                """,
+                (aid, pid, agent_role, action_type, title, prompt_text, opts_json, default_option, timeout_seconds, now)
+            )
+
+        return {
+            "action_id": aid,
+            "project_id": pid,
+            "agent_role": agent_role,
+            "action_type": action_type,
+            "title": title,
+            "prompt_text": prompt_text,
+            "options": options or [],
+            "default_option": default_option,
+            "timeout_seconds": timeout_seconds,
+            "status": "pending",
+            "created_at": now,
+        }
+
+    def get_pending_actions(
+        self,
+        project_id: Optional[str] = None,
+        status: str = "pending",
+    ) -> List[Dict[str, Any]]:
+        """List active pending actions requiring user decision."""
+        query = "SELECT * FROM pending_actions WHERE 1=1"
+        params: list[Any] = []
+        if project_id and project_id != "all":
+            query += " AND project_id = ?"
+            params.append(project_id)
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+        query += " ORDER BY created_at DESC"
+
+        with self.connection() as conn:
+            cur = conn.execute(query, params)
+            results = []
+            for row in cur.fetchall():
+                d = dict(row)
+                d["options"] = json.loads(d.pop("options_json", "[]") or "[]")
+                results.append(d)
+            return results
+
+    def resolve_pending_action(
+        self,
+        action_id: str,
+        selected_option: str,
+        user_feedback: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Resolve a pending action with user choice."""
+        now = _now_iso()
+        with self.connection() as conn:
+            conn.execute(
+                """
+                UPDATE pending_actions
+                SET status = 'resolved', selected_option = ?, user_feedback = ?, resolved_at = ?
+                WHERE action_id = ?
+                """,
+                (selected_option, user_feedback or "", now, action_id)
+            )
+            row = conn.execute("SELECT * FROM pending_actions WHERE action_id = ?", (action_id,)).fetchone()
+            if not row:
+                return {"error": "Action not found", "success": False}
+            d = dict(row)
+            d["options"] = json.loads(d.pop("options_json", "[]") or "[]")
+            d["success"] = True
+            return d

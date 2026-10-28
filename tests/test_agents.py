@@ -69,14 +69,16 @@ class TestDeterministicMockLLM(unittest.TestCase):
         self.assertEqual(len(self.llm.call_history), 2)
 
     def test_m02_all_eight_roles_responses(self):
-        """Verify distinct, role-grounded responses for all 8 canonical roles."""
+        """Verify distinct, role-grounded responses for canonical roles."""
         role_prompts = {
             "Coordinator": "Coordinator: What is the current status of the project?",
             "Architect": "Architect: Explain the DB design and schema",
             "Designer": "Designer: Formulate the CLI and REPL ergonomics and design tokens",
+            "Database Engineer": "Database Engineer: Create SQL DDL schema and indexes",
             "Developer": "Developer: Implement the persistence module and state manager",
             "Tester": "Tester: Execute pytest suite and verify test coverage",
             "Reviewer": "Reviewer: Perform code review, security audit, and PEP-8 check",
+            "Security Auditor": "Security Auditor: Audit vulnerabilities for OWASP and secret leaks",
             "GitHub Manager": "GitHub Manager: Create a git branch, commit changes, and open a PR",
             "Memory & Status Manager": "Memory Manager: Persist state, decisions, and milestones to disk",
         }
@@ -90,8 +92,12 @@ class TestDeterministicMockLLM(unittest.TestCase):
             # Verify role content is specialized
             if role_name == "Architect":
                 self.assertIn("SQLite", resp)
+            elif role_name == "Database Engineer":
+                self.assertIn("Database", resp)
             elif role_name == "Tester":
                 self.assertIn("Test", resp)
+            elif role_name == "Security Auditor":
+                self.assertIn("Security", resp)
             elif role_name == "GitHub Manager":
                 self.assertIn("GitHub", resp)
 
@@ -102,9 +108,10 @@ class TestDeterministicMockLLM(unittest.TestCase):
             ("wbs and backlog", "Coordinator"),
             ("database design and adr", "Architect"),
             ("ui/ux design system", "Designer"),
+            ("database engineer sql ddl", "Database Engineer"),
             ("coding python module", "Developer"),
             ("qa sdet unit test", "Tester"),
-            ("security audit owasp", "Reviewer"),
+            ("security auditor vulnerability audit", "Security Auditor"),
             ("git branch and pull request", "GitHub Manager"),
             ("vector store checkpoint", "Memory & Status Manager"),
         ]
@@ -217,7 +224,17 @@ class TestLLMFactory(unittest.TestCase):
 
     def test_f01_default_to_mock_when_no_keys(self):
         """Verify get_llm defaults safely to DeterministicMockLLM when offline without keys."""
-        for key in ["OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "ANTHROPIC_API_KEY", "MOCK_LLM"]:
+        for key in [
+            "OPENAI_API_KEY",
+            "GEMINI_API_KEY",
+            "GOOGLE_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "OPENROUTER_API_KEY",
+            "GROQ_API_KEY",
+            "NVIDIA_API_KEY",
+            "MOCK_LLM",
+            "CREWAI_MOCK_LLM",
+        ]:
             os.environ.pop(key, None)
 
         llm = get_llm()
@@ -273,9 +290,9 @@ class TestLLMFactory(unittest.TestCase):
 class TestRoleDefinitions(unittest.TestCase):
     """Test suite for 8 canonical specialist role definitions and constraints."""
 
-    def test_r01_all_eight_canonical_roles_defined(self):
-        """Verify all 8 canonical roles are present in AGENT_ROLES and ROLE_DEFINITIONS."""
-        self.assertEqual(len(ROLE_DEFINITIONS), 8)
+    def test_r01_all_canonical_roles_defined(self):
+        """Verify all canonical roles are present in AGENT_ROLES and ROLE_DEFINITIONS."""
+        self.assertEqual(len(ROLE_DEFINITIONS), len(CANONICAL_ROLES))
         self.assertEqual(set(ROLE_DEFINITIONS.keys()), set(CANONICAL_ROLES))
         self.assertEqual(set(AGENT_ROLES), set(CANONICAL_ROLES))
 
@@ -318,14 +335,16 @@ class TestRoleDefinitions(unittest.TestCase):
                 self.assertFalse(spec_def.get("allow_delegation"))
 
     def test_r04_tool_assignments(self):
-        """Verify expected functional tool suites for each of the 8 roles."""
+        """Verify expected functional tool suites for each of the canonical roles."""
         expected_tools = {
             "Coordinator": ["list_workspace_files", "query_memory", "record_milestone"],
             "Architect": ["read_workspace_file", "list_workspace_files", "record_decision", "query_memory"],
             "Designer": ["read_workspace_file", "write_workspace_file", "list_workspace_files"],
+            "Database Engineer": ["read_workspace_file", "write_workspace_file", "list_workspace_files", "record_decision", "query_memory"],
             "Developer": ["read_workspace_file", "write_workspace_file", "patch_workspace_file", "list_workspace_files"],
             "Tester": ["read_workspace_file", "list_workspace_files"],
             "Reviewer": ["read_workspace_file", "list_workspace_files", "query_memory"],
+            "Security Auditor": ["read_workspace_file", "list_workspace_files", "record_decision", "query_memory"],
             "GitHub Manager": ["github_issue_tool", "github_pr_tool", "github_branch_tool", "github_commit_tool", "github_repo_status_tool"],
             "Memory & Status Manager": ["record_decision", "record_milestone", "query_memory"],
         }
@@ -367,9 +386,9 @@ class TestRoleDefinitions(unittest.TestCase):
             get_role_definition("quantum_wizard")
 
     def test_r07_list_all_roles(self):
-        """Verify list_role_definitions() and list_all_roles() return all 8 roles."""
+        """Verify list_role_definitions() and list_all_roles() return all roles."""
         all_defs = list_role_definitions()
-        self.assertEqual(len(all_defs), 8)
+        self.assertEqual(len(all_defs), len(CANONICAL_ROLES))
         self.assertEqual([d.canonical_role for d in all_defs], CANONICAL_ROLES)
         self.assertEqual(list_all_roles(), all_defs)
         self.assertEqual(get_all_roles(), CANONICAL_ROLES)
@@ -435,12 +454,12 @@ class TestCrewBuilder(unittest.TestCase):
         self.assertEqual(out, "Custom agent response")
 
     def test_b04_build_default_team(self):
-        """Verify build_team() creates all 8 agents mapped by canonical role."""
+        """Verify build_team() creates all agents mapped by canonical role."""
         team = build_team(
             state_manager=self.state_manager,
             workspace_root=self.workspace_root,
         )
-        self.assertEqual(len(team), 8)
+        self.assertEqual(len(team), len(CANONICAL_ROLES))
         self.assertEqual(set(team.keys()), set(CANONICAL_ROLES))
         for role, agent in team.items():
             self.assertEqual(agent.canonical_role, role)
@@ -457,7 +476,7 @@ class TestCrewBuilder(unittest.TestCase):
         team = build_team()
         crew = build_crew(agents=team, process=Process.sequential)
         self.assertEqual(crew.process, Process.sequential)
-        self.assertEqual(len(crew.agents), 8)
+        self.assertEqual(len(crew.agents), len(CANONICAL_ROLES))
 
     def test_b07_build_crew_hierarchical_auto_manager(self):
         """Verify hierarchical crew automatically selects Coordinator as manager."""

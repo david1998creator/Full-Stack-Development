@@ -27,14 +27,16 @@ DEFAULT_MOCK_GITHUB_NAME = "mock_github.json"
 VALID_INTEGRITY_MODES = ("development", "strict", "production")
 DEFAULT_INTEGRITY_MODE = "development"
 
-# 8 Canonical agent roles
+# 10 Canonical agent roles (8 core + Database Engineer & Security Auditor)
 CANONICAL_ROLES: list[str] = [
     "Coordinator",
     "Architect",
     "Designer",
+    "Database Engineer",
     "Developer",
     "Tester",
     "Reviewer",
+    "Security Auditor",
     "GitHub Manager",
     "Memory & Status Manager",
 ]
@@ -47,9 +49,18 @@ ROLE_ALIASES: dict[str, str] = {
     "coordinator/manager": "Coordinator",
     "architect": "Architect",
     "designer": "Designer",
+    "database": "Database Engineer",
+    "database engineer": "Database Engineer",
+    "database_engineer": "Database Engineer",
+    "db": "Database Engineer",
+    "db engineer": "Database Engineer",
     "developer": "Developer",
     "tester": "Tester",
     "reviewer": "Reviewer",
+    "security": "Security Auditor",
+    "security auditor": "Security Auditor",
+    "security_auditor": "Security Auditor",
+    "secops": "Security Auditor",
     "github": "GitHub Manager",
     "github manager": "GitHub Manager",
     "github_manager": "GitHub Manager",

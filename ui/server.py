@@ -76,9 +76,11 @@ def get_agents():
         {"key": "coordinator", "canon": "Coordinator", "name": "Coordinator / Manager", "desc": "Project orchestration & task decomposition", "tag": "Manager"},
         {"key": "architect", "canon": "Architect", "name": "Architect", "desc": "System design, ADRs & data schema", "tag": "System"},
         {"key": "designer", "canon": "Designer", "name": "Designer", "desc": "UI/UX specs, interface ergonomics", "tag": "Design"},
+        {"key": "database_engineer", "canon": "Database Engineer", "name": "Database Engineer", "desc": "Schema DDL, migrations & seed fixtures", "tag": "Data"},
         {"key": "developer", "canon": "Developer", "name": "Developer", "desc": "Feature implementation & integration", "tag": "Dev"},
         {"key": "tester", "canon": "Tester", "name": "Tester", "desc": "E2E suites & quality assurance", "tag": "QA"},
         {"key": "reviewer", "canon": "Reviewer", "name": "Reviewer", "desc": "Security audit & PEP 8 compliance", "tag": "Audit"},
+        {"key": "security_auditor", "canon": "Security Auditor", "name": "Security Auditor", "desc": "SAST, OWASP checks & credential hygiene", "tag": "Security"},
         {"key": "github_manager", "canon": "GitHub Manager", "name": "GitHub Manager", "desc": "Repo branches, atomic PRs & sync", "tag": "GitOps"},
         {"key": "memory_manager", "canon": "Memory & Status Manager", "name": "Memory & Status Manager", "desc": "ACID state & semantic vector memory", "tag": "State"}
     ]
@@ -657,7 +659,7 @@ def list_all_projects():
 def get_live_pipeline_telemetry():
     """Returns real-time pipeline topology, active execution transit, sub-agents, agent logs, and token metrics."""
     pid = request.args.get("project_id") or request.args.get("slug")
-    execution_roles = ["Architect", "Designer", "Developer", "Tester", "Reviewer"]
+    execution_roles = ["Architect", "Designer", "Database Engineer", "Developer", "Tester", "Reviewer", "Security Auditor"]
     management_roles = ["Coordinator", "GitHub Manager", "Memory & Status Manager"]
 
     # 1. Fetch all agent statuses from SQLite
@@ -780,6 +782,302 @@ def chat_with_agent():
             "response": f"Acknowledged. As the {agent_id.title()}, I am tracking your request: '{message}'. Project state is persistent and operational.",
             "grounded_context": str(e)
         })
+
+@app.route("/api/milestones", methods=["GET"])
+def get_milestones():
+    pid = request.args.get("project_id") or request.args.get("slug")
+    db_milestones = state_mgr.get_milestones(project_id=pid)
+    
+    canonical_phases = [
+        {
+            "milestone_id": "ms_phase_1",
+            "phase_number": 1,
+            "title": "Phase 1: Architecture & ADR Blueprint",
+            "description": "Establish decoupled system architecture, SQLite WAL schema, and Architectural Decision Records.",
+            "lead_role": "Architect",
+            "status": "achieved",
+            "criteria": [
+                {"text": "System architecture diagram formulated", "completed": True},
+                {"text": "SQLite WAL schema with foreign keys committed", "completed": True},
+                {"text": "ADR-001 (Persistence & Tooling) signed off", "completed": True}
+            ],
+            "progress_percent": 100,
+            "target_date": "Phase 1"
+        },
+        {
+            "milestone_id": "ms_phase_2",
+            "phase_number": 2,
+            "title": "Phase 2: Relational Schema & UI Wireframe",
+            "description": "Design SQL DDL schema, migrations, seed fixtures, and design system tokens.",
+            "lead_role": "Database Engineer & Designer",
+            "status": "achieved",
+            "criteria": [
+                {"text": "Designer specifies UI data requirements & interaction states", "completed": True},
+                {"text": "Database Engineer generates schema DDL and indexes", "completed": True},
+                {"text": "Sample seed fixtures validated for local velocity", "completed": True}
+            ],
+            "progress_percent": 100,
+            "target_date": "Phase 2"
+        },
+        {
+            "milestone_id": "ms_phase_3",
+            "phase_number": 3,
+            "title": "Phase 3: Core Implementation & Subagents",
+            "description": "Develop full-stack features, dynamic subagents, and dual-tier model synthesis.",
+            "lead_role": "Developer",
+            "status": "in_progress",
+            "criteria": [
+                {"text": "Core domain models and state persistence wired", "completed": True},
+                {"text": "Autonomous Developer delegates to specialized subagents", "completed": True},
+                {"text": "Budget Guard token threshold verified", "completed": False}
+            ],
+            "progress_percent": 65,
+            "target_date": "Phase 3"
+        },
+        {
+            "milestone_id": "ms_phase_4",
+            "phase_number": 4,
+            "title": "Phase 4: Quality Assurance & Security Audit",
+            "description": "Execute pytest test harness, browser smoke tests, and OWASP SAST scan.",
+            "lead_role": "Tester & Security Auditor",
+            "status": "pending",
+            "criteria": [
+                {"text": "Unit and integration tests pass with zero regressions", "completed": False},
+                {"text": "Playwright browser smoke tests green", "completed": False},
+                {"text": "Security Auditor verifies zero unparameterized SQL or secrets", "completed": False}
+            ],
+            "progress_percent": 0,
+            "target_date": "Phase 4"
+        },
+        {
+            "milestone_id": "ms_phase_5",
+            "phase_number": 5,
+            "title": "Phase 5: GitOps, PR Automation & Delivery",
+            "description": "Manage Git branches, atomic commits, PR review approvals, and release sign-off.",
+            "lead_role": "GitHub Manager & Coordinator",
+            "status": "pending",
+            "criteria": [
+                {"text": "Conventional commits created on feature branch", "completed": False},
+                {"text": "GitHub PR opened with testing evidence and changelog", "completed": False},
+                {"text": "Memory & Status Manager certifies durable cross-session state", "completed": False}
+            ],
+            "progress_percent": 0,
+            "target_date": "Phase 5"
+        }
+    ]
+    
+    if db_milestones:
+        db_by_id = {m.get("milestone_id"): m for m in db_milestones}
+        for phase in canonical_phases:
+            m = db_by_id.get(phase["milestone_id"])
+            if m:
+                phase["status"] = m.get("status", phase["status"])
+                if phase["status"] == "achieved":
+                    phase["progress_percent"] = 100
+                    for c in phase["criteria"]:
+                        c["completed"] = True
+                elif phase["status"] == "in_progress":
+                    phase["progress_percent"] = 65
+                elif phase["status"] == "pending":
+                    phase["progress_percent"] = 0
+
+    total_milestones = len(canonical_phases)
+    achieved = sum(1 for m in canonical_phases if m["status"] == "achieved")
+    in_progress = sum(1 for m in canonical_phases if m["status"] == "in_progress")
+    overall_progress = int((achieved * 100 + in_progress * 50) / total_milestones) if total_milestones else 0
+
+    return jsonify({
+        "success": True,
+        "project_id": pid or "default_project",
+        "milestones": canonical_phases,
+        "stats": {
+            "total": total_milestones,
+            "achieved": achieved,
+            "in_progress": in_progress,
+            "pending": total_milestones - achieved - in_progress,
+            "overall_progress_percent": overall_progress
+        }
+    })
+
+@app.route("/api/actions/pending", methods=["GET"])
+def get_pending_actions():
+    pid = request.args.get("project_id") or request.args.get("slug")
+    actions = state_mgr.get_pending_actions(project_id=pid, status="pending")
+    return jsonify({
+        "success": True,
+        "project_id": pid or "all",
+        "count": len(actions),
+        "actions": actions
+    })
+
+@app.route("/api/actions/<action_id>/resolve", methods=["POST"])
+def resolve_action(action_id):
+    data = request.json or {}
+    selected = data.get("selected_option")
+    feedback = data.get("user_feedback", "")
+    if not selected:
+        return jsonify({"success": False, "error": "selected_option is required"}), 400
+    
+    res = state_mgr.resolve_pending_action(
+        action_id=action_id,
+        selected_option=selected,
+        user_feedback=feedback
+    )
+    return jsonify(res)
+
+@app.route("/api/budget/estimate", methods=["POST"])
+def estimate_budget():
+    data = request.json or {}
+    pid = data.get("project_id") or "default_project"
+    description = data.get("task_description") or data.get("description") or "Full SDLC build"
+    create_pending = data.get("create_pending", True)
+
+    est_tokens = 60000
+    est_cost = round((est_tokens / 1000.0) * 0.003, 2)
+
+    action_id = None
+    if create_pending:
+        existing = state_mgr.get_pending_actions(project_id=pid, status="pending")
+        budget_acts = [a for a in existing if a.get("action_type") == "BUDGET_APPROVAL"]
+        if budget_acts:
+            action_id = budget_acts[0]["action_id"]
+        else:
+            action = state_mgr.create_pending_action(
+                project_id=pid,
+                agent_role="Coordinator",
+                action_type="BUDGET_APPROVAL",
+                title="Budget Guard: Implementation Spend Approval",
+                prompt_text=(
+                    f"Architecture & Planning complete. Implementation phase for '{description}' is estimated at "
+                    f"~{est_tokens:,} tokens (~${est_cost:.2f} USD across OpenRouter & Gemini). "
+                    "Do you approve proceeding with automatic code synthesis?"
+                ),
+                options=["Approve Implementation ($0.18)", "Downscale Scope (Fast Track)", "Cancel Execution"],
+                default_option=None,
+                timeout_seconds=0
+            )
+            action_id = action.get("action_id")
+
+    return jsonify({
+        "success": True,
+        "project_id": pid,
+        "estimated_tokens": est_tokens,
+        "estimated_cost_usd": est_cost,
+        "requires_approval": True,
+        "action_id": action_id
+    })
+
+@app.route("/api/graph/memory", methods=["GET"])
+def get_memory_graph():
+    pid = request.args.get("project_id") or request.args.get("slug")
+    
+    nodes = []
+    edges = []
+    seen_nodes = set()
+
+    def add_node(nid, label, ntype, color, meta=None):
+        if nid not in seen_nodes:
+            seen_nodes.add(nid)
+            nodes.append({
+                "data": {
+                    "id": nid,
+                    "label": label,
+                    "type": ntype,
+                    "color": color,
+                    "metadata": meta or {}
+                }
+            })
+
+    def add_edge(eid, source, target, label, color="#94a3b8"):
+        if source in seen_nodes and target in seen_nodes:
+            edges.append({
+                "data": {
+                    "id": eid,
+                    "source": source,
+                    "target": target,
+                    "label": label,
+                    "color": color
+                }
+            })
+
+    role_colors = {
+        "Coordinator": "#3b82f6",
+        "Architect": "#8b5cf6",
+        "Designer": "#ec4899",
+        "Database Engineer": "#06b6d4",
+        "Developer": "#10b981",
+        "Tester": "#f59e0b",
+        "Reviewer": "#ef4444",
+        "Security Auditor": "#f97316",
+        "GitHub Manager": "#6366f1",
+        "Memory & Status Manager": "#14b8a6",
+    }
+    for role in CANONICAL_ROLES:
+        add_node(f"agent_{role}", role, "agent", role_colors.get(role, "#64748b"))
+
+    pipeline_flow = [
+        ("Coordinator", "Architect", "decomposes"),
+        ("Architect", "Designer", "contracts"),
+        ("Designer", "Database Engineer", "data_reqs"),
+        ("Database Engineer", "Developer", "schema_ddl"),
+        ("Developer", "Tester", "submits_code"),
+        ("Tester", "Reviewer", "qa_report"),
+        ("Reviewer", "Security Auditor", "code_review"),
+        ("Security Auditor", "GitHub Manager", "cleared_pr"),
+        ("GitHub Manager", "Memory & Status Manager", "synced"),
+    ]
+    for idx, (src, dst, lbl) in enumerate(pipeline_flow):
+        add_edge(f"flow_{idx}", f"agent_{src}", f"agent_{dst}", lbl, "#64748b")
+
+    decisions = state_mgr.get_decisions(project_id=pid)
+    for idx, dec in enumerate(decisions[:15]):
+        did = f"dec_{dec.get('decision_id', idx)}"
+        title = dec.get("title", f"ADR-{idx+1}")
+        agent = dec.get("agent_role") or "Architect"
+        add_node(did, title[:28] + ("..." if len(title) > 28 else ""), "decision", "#a855f7", dec)
+        add_edge(f"edge_{did}", f"agent_{agent}", did, "authored", "#a855f7")
+
+    milestones = state_mgr.get_milestones(project_id=pid)
+    if not milestones:
+        phase_names = [
+            ("ms_p1", "Phase 1: Architecture Blueprint", "Architect"),
+            ("ms_p2", "Phase 2: Database & UI Wireframe", "Database Engineer"),
+            ("ms_p3", "Phase 3: Core Implementation", "Developer"),
+            ("ms_p4", "Phase 4: QA & Security Audit", "Security Auditor"),
+            ("ms_p5", "Phase 5: GitOps & CI/CD Delivery", "GitHub Manager"),
+        ]
+        for mid, title, lead in phase_names:
+            add_node(mid, title, "milestone", "#eab308")
+            add_edge(f"edge_{mid}", f"agent_{lead}", mid, "targets", "#eab308")
+    else:
+        for m in milestones[:10]:
+            mid = f"ms_{m.get('milestone_id')}"
+            title = m.get("title", "Milestone")
+            add_node(mid, title[:28], "milestone", "#eab308", m)
+            add_edge(f"edge_{mid}", "agent_Coordinator", mid, "orchestrates", "#eab308")
+
+    tasks = state_mgr.list_tasks(project_id=pid, limit=12)
+    for t in tasks:
+        tid = f"task_{t.get('task_id')}"
+        tname = t.get("task_name") or t.get("description", "Task")
+        trole = t.get("agent_role") or "Developer"
+        status = t.get("status", "pending")
+        color = "#22c55e" if status == "completed" else ("#3b82f6" if status == "in_progress" else "#94a3b8")
+        add_node(tid, tname[:24] + ("..." if len(tname) > 24 else ""), "task", color, t)
+        add_edge(f"edge_{tid}", f"agent_{trole}", tid, "executes", color)
+
+    return jsonify({
+        "success": True,
+        "project_id": pid or "default_project",
+        "elements": {
+            "nodes": nodes,
+            "edges": edges
+        },
+        "stats": {
+            "node_count": len(nodes),
+            "edge_count": len(edges)
+        }
+    })
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000, debug=False)

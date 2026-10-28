@@ -679,6 +679,25 @@ class TestRoleToolAssignments(unittest.TestCase):
         self.assertIn("record_milestone", tool_names)
         self.assertEqual(len(tools), 3)
 
+    def test_database_engineer_tools(self):
+        tools = get_agent_tools("Database Engineer", workspace_root=self.workspace_root)
+        tool_names = [t.name for t in tools]
+        self.assertIn("read_workspace_file", tool_names)
+        self.assertIn("write_workspace_file", tool_names)
+        self.assertIn("list_workspace_files", tool_names)
+        self.assertIn("record_decision", tool_names)
+        self.assertIn("query_memory", tool_names)
+        self.assertEqual(len(tools), 5)
+
+    def test_security_auditor_tools(self):
+        tools = get_agent_tools("Security Auditor", workspace_root=self.workspace_root)
+        tool_names = [t.name for t in tools]
+        self.assertIn("read_workspace_file", tool_names)
+        self.assertIn("list_workspace_files", tool_names)
+        self.assertIn("record_decision", tool_names)
+        self.assertIn("query_memory", tool_names)
+        self.assertEqual(len(tools), 4)
+
     def test_unknown_role_raises_key_error(self):
         with self.assertRaises(KeyError):
             get_agent_tools("InvalidRole")
