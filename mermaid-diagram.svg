@@ -44,21 +44,21 @@
   <rect x="265.7825" y="40" width="223.49499999999998" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="377.53000000000003" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">You (High-Level Requirements)</text>
 </g>
-<g class="node" data-id="Me" data-label="Antigravity (Executive Meta-Orchestrator)" data-shape="rectangle">
+<g class="node" data-id="Me" data-label="Coordinator (Executive Meta-Orchestrator)" data-shape="rectangle">
   <rect x="234.29000000000002" y="124.9" width="286.47999999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="377.53" y="143.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Antigravity (Executive Meta-Orchestrator)</text>
+  <text x="377.53" y="143.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Coordinator (Executive Meta-Orchestrator)</text>
 </g>
-<g class="node" data-id="Monitor" data-label="Antigravity Monitors DB &amp; Traces in Real-Time" data-shape="rectangle">
+<g class="node" data-id="Monitor" data-label="Control Console Monitors DB &amp; Traces in Real-Time" data-shape="rectangle">
   <rect x="40" y="706.3" width="310.19200000000006" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="195.09600000000003" y="724.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Antigravity Monitors DB &amp; Traces in Real-Time</text>
+  <text x="195.09600000000003" y="724.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Control Console Monitors DB &amp; Traces in Real-Time</text>
 </g>
 <g class="node" data-id="Intervene" data-label="Auto-Heal / Re-route if an Agent is Stuck" data-shape="rectangle">
   <rect x="60.74800000000006" y="791.2" width="268.6959999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="195.096" y="809.6500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Auto-Heal / Re-route if an Agent is Stuck</text>
 </g>
-<g class="node" data-id="Deliver" data-label="Antigravity Delivers Verified Production Release to You" data-shape="rectangle">
+<g class="node" data-id="Deliver" data-label="Pipeline Delivers Verified Production Release to You" data-shape="rectangle">
   <rect x="378.192" y="706.3" width="363.5439999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="559.9639999999999" y="724.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Antigravity Delivers Verified Production Release to You</text>
+  <text x="559.9639999999999" y="724.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Pipeline Delivers Verified Production Release to You</text>
 </g>
 <g class="node" data-id="Trigger" data-label="Spin Up / Decompose Tasks via API / CLI" data-shape="rectangle">
   <rect x="238.73600000000002" y="259.8" width="277.58799999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />

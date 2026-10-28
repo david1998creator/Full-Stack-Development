@@ -491,7 +491,7 @@ crewai> status
 ```text
 +------------------------------- PERSISTENT CREWAI SYSTEM DASHBOARD -------------------------------+
 | Project: Persistent CrewAI Engineering (ID: default_project)                                     |
-| Status: ACTIVE | Integrity Mode: DEVELOPMENT | Root: C:\Users\User\...\persistent_crewai_team    |
+| Status: ACTIVE | Integrity Mode: DEVELOPMENT | Root: ./persistent_crewai_team                   |
 +------------------------------- Observability & Operational Status -------------------------------+
                                          Project Milestones                                         
 +--------------------------------------------------------------------------------------------------+
@@ -696,7 +696,7 @@ crewai> export backup_session.json
 ```
 *Output*:
 ```text
-Export completed: C:\Users\User\...\persistent_crewai_team\backup_session.json
+Export completed: ./backup_session.json
 Exported 3 decisions, 4 milestones for project 'default_project'.
 crewai> 
 ```
@@ -707,7 +707,7 @@ crewai> import backup_session.json --overwrite
 ```
 *Output*:
 ```text
-Import completed successfully from: C:\Users\User\...\persistent_crewai_team\backup_session.json
+Import completed successfully from: ./backup_session.json
 Restored project: default_project (3 decisions, 4 milestones).
 crewai> 
 ```
@@ -754,7 +754,8 @@ The REPL executes each command in sequence, prints formatted telemetry to stdout
 #### On Windows (PowerShell):
 ```powershell
 # 1. Clone or navigate to the repository root
-cd C:\Users\User\.gemini\antigravity\scratch\persistent_crewai_team
+git clone https://github.com/david1998creator/Full-Stack-Development.git
+cd Full-Stack-Development
 
 # 2. Create and activate a Python virtual environment
 python -m venv .venv

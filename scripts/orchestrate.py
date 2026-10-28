@@ -1,6 +1,6 @@
 """
 Executive Orchestration CLI script for Persistent CrewAI Multi-Agent Framework.
-Allows Antigravity or developers to trigger autonomous project generation from the command line:
+Allows developers or external orchestrators to trigger autonomous project generation from the command line:
 1. Decomposes project goal via Coordinator
 2. Scaffolds physical workspace and production manifests
 3. Executes assigned agent tasks with TDD self-correction
@@ -24,7 +24,7 @@ SERVER_URL = "http://127.0.0.1:8000"
 
 
 def orchestrate_project(goal: str, slug: str = "production_app") -> None:
-    print(f"\n[Antigravity Meta-Orchestrator] Initiating project: '{slug}'")
+    print(f"\n[AgentHub Meta-Orchestrator] Initiating project: '{slug}'")
     print(f"Goal: {goal}\n")
 
     # 1. Check server health
@@ -98,7 +98,7 @@ def orchestrate_project(goal: str, slug: str = "production_app") -> None:
             print(f"      File: {f}")
         print(f"   - Git History:\n      {stat_data.get('git_log')}")
 
-    print(f"\n[SUCCESS] [Antigravity Meta-Orchestrator] Project '{slug}' build and verification complete!")
+    print(f"\n[SUCCESS] [AgentHub Meta-Orchestrator] Project '{slug}' build and verification complete!")
 
 
 if __name__ == "__main__":

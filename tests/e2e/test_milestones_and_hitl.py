@@ -13,7 +13,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 def main():
-    artifacts_dir = Path(r"C:\Users\User\.gemini\antigravity\brain\13c43420-a759-475b-bd37-501d89910b88")
+    artifacts_dir = Path(__file__).resolve().parent.parent.parent / "docs"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     console_errors = []
