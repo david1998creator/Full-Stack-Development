@@ -65,6 +65,23 @@ Open **`http://127.0.0.1:8000`** in your browser to access:
 - **Milestones Roadmap**: Phased delivery tracking with automated SQLite-verified criteria checks.
 - **In-Browser Knowledge Graph**: Real-time Cytoscape.js interactive graph of architectural decisions and tables.
 
+### 4. Connect via Model Context Protocol (MCP)
+Plug the entire 10-Role SDLC Team directly into **Claude Desktop**, **Cursor**, **OpenCode**, or **ChatGPT**:
+```bash
+python -m persistent_crewai.mcp_server
+```
+Copy and paste this snippet into your `claude_desktop_config.json` or `mcp.json`:
+```json
+{
+  "mcpServers": {
+    "persistent-crewai": {
+      "command": "python",
+      "args": ["-m", "persistent_crewai.mcp_server"]
+    }
+  }
+}
+```
+
 ---
 
 ## 📸 Control Console & Live System Showcase

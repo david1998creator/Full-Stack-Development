@@ -19,6 +19,9 @@ requests>=2.31.0
 rich>=13.0.0
 click>=8.0.0
 
+# Model Context Protocol (MCP) Server for External Orchestrators
+mcp>=1.0.0
+
 # Automated Testing & Headless Browser Verification
 pytest>=8.0.0
 playwright>=1.40.0

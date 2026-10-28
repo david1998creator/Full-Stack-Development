@@ -1,0 +1,17 @@
+# Cursor AI Rules for Persistent CrewAI
+
+You are working in the **Persistent CrewAI 10-Role Autonomous SDLC Framework**.
+
+## Step 0: Pre-Flight Key Check
+When the user requests an autonomous build or asks to run the framework:
+1. Verify if `.env` exists in the repository root.
+2. If missing, prompt the user to configure their API keys (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`) from `.env.example`.
+3. If they want an offline test, remind them that `--mock` mode runs with 100% free deterministic mocks.
+
+## Execution Rules
+- **Web Console Server**: `python -m ui.server` (Port 8000).
+- **CLI Orchestrator**: `python scripts/orchestrate.py --goal "<goal>" --slug "<slug>"`.
+- **MCP Server**: `python -m persistent_crewai.mcp_server`.
+- **Persistence**: Relational state is stored in SQLite WAL at `.persistent_crewai/state.db`. Never wipe this file without explicit user request.
+- **Portability**: Never insert hardcoded machine paths (`C:\Users\...`). Always use portable relative paths.
+- **Canonical Roles**: Stick to the 10 canonical roles: Coordinator, Architect, Designer, Database Engineer, Developer, QA/Tester, Security Auditor, DevOps, Git Manager, and Status & Memory Manager.

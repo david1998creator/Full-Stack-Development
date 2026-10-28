@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "persistent-crewai": {
+      "command": "python",
+      "args": ["-m", "persistent_crewai.mcp_server"],
+      "env": {
+        "PYTHONPATH": "src;."
+      }
+    }
+  }
+}
