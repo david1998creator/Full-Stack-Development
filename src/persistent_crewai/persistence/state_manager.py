@@ -1260,3 +1260,131 @@ class StateManager:
                 "milestones_total": len(all_ms),
             },
         }
+
+    # -------------------------------------------------------------------------
+    # Token Ledger & Cost Metering
+    # -------------------------------------------------------------------------
+    def record_token_usage(
+        self,
+        project_id: Optional[str] = None,
+        run_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+        agent_role: str = "Developer",
+        provider: str = "openrouter",
+        model_name: str = "qwen/qwen-2.5-coder-32b-instruct",
+        prompt_tokens: int = 0,
+        completion_tokens: int = 0,
+        total_tokens: Optional[int] = None,
+        estimated_cost_usd: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Record token consumption and estimated cost for an LLM call into token_ledger."""
+        from persistent_crewai.config import calculate_token_cost
+        pid = project_id or self.project_id
+        lid = f"tkn_{uuid.uuid4().hex[:12]}"
+        t_tokens = total_tokens if total_tokens is not None else (prompt_tokens + completion_tokens)
+        cost = estimated_cost_usd if estimated_cost_usd is not None else calculate_token_cost(model_name, prompt_tokens, completion_tokens)
+        meta_json = json.dumps(metadata or {}, ensure_ascii=False)
+
+        with self.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO token_ledger (
+                    ledger_id, project_id, run_id, task_id, agent_role, provider,
+                    model_name, prompt_tokens, completion_tokens, total_tokens,
+                    estimated_cost_usd, metadata_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (lid, pid, run_id, task_id, agent_role, provider, model_name, prompt_tokens, completion_tokens, t_tokens, cost, meta_json)
+            )
+
+        return {
+            "ledger_id": lid,
+            "project_id": pid,
+            "agent_role": agent_role,
+            "provider": provider,
+            "model_name": model_name,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": t_tokens,
+            "estimated_cost_usd": cost,
+        }
+
+    def get_token_summary(self, project_id: Optional[str] = None) -> Dict[str, Any]:
+        """Aggregate token usage and cost accounting across providers, agents, and projects."""
+        conditions = []
+        params: List[Any] = []
+        if project_id and project_id != "all":
+            conditions.append("project_id = ?")
+            params.append(project_id)
+
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        with self.connection() as conn:
+            # Overall totals
+            tot_row = conn.execute(
+                f"""
+                SELECT 
+                    COALESCE(SUM(prompt_tokens), 0) as total_prompt,
+                    COALESCE(SUM(completion_tokens), 0) as total_completion,
+                    COALESCE(SUM(total_tokens), 0) as total_tokens,
+                    COALESCE(SUM(estimated_cost_usd), 0.0) as total_cost,
+                    COUNT(*) as total_calls
+                FROM token_ledger {where}
+                """,
+                params
+            ).fetchone()
+
+            # Group by provider
+            prov_rows = conn.execute(
+                f"""
+                SELECT 
+                    provider,
+                    SUM(total_tokens) as tokens,
+                    SUM(estimated_cost_usd) as cost,
+                    COUNT(*) as calls
+                FROM token_ledger {where}
+                GROUP BY provider
+                """,
+                params
+            ).fetchall()
+
+            # Group by agent
+            agent_rows = conn.execute(
+                f"""
+                SELECT 
+                    agent_role,
+                    SUM(total_tokens) as tokens,
+                    SUM(estimated_cost_usd) as cost,
+                    COUNT(*) as calls
+                FROM token_ledger {where}
+                GROUP BY agent_role
+                ORDER BY tokens DESC
+                """,
+                params
+            ).fetchall()
+
+            # Recent invocations
+            recent_rows = conn.execute(
+                f"""
+                SELECT 
+                    ledger_id, agent_role, provider, model_name, total_tokens, estimated_cost_usd, timestamp
+                FROM token_ledger {where}
+                ORDER BY timestamp DESC LIMIT 10
+                """,
+                params
+            ).fetchall()
+
+        by_provider = {r["provider"]: {"tokens": r["tokens"], "cost": round(r["cost"], 4), "calls": r["calls"]} for r in prov_rows}
+        by_agent = {r["agent_role"]: {"tokens": r["tokens"], "cost": round(r["cost"], 4), "calls": r["calls"]} for r in agent_rows}
+
+        return {
+            "total_tokens": tot_row["total_tokens"] if tot_row else 0,
+            "total_prompt_tokens": tot_row["total_prompt"] if tot_row else 0,
+            "total_completion_tokens": tot_row["total_completion"] if tot_row else 0,
+            "total_cost_usd": round(tot_row["total_cost"], 4) if tot_row else 0.0,
+            "total_calls": tot_row["total_calls"] if tot_row else 0,
+            "by_provider": by_provider,
+            "by_agent": by_agent,
+            "recent_calls": [dict(r) for r in recent_rows],
+        }

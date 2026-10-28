@@ -61,10 +61,17 @@
 
       <div class="h-5 w-px bg-slate-800 mx-1"></div>
 
-      <!-- Project Selector Pill -->
-      <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200">
-        <span class="font-medium" id="workspaceNameHeader">Persistent CrewAI SDLC</span>
-        <i class="ph ph-caret-down text-slate-400"></i>
+      <!-- Interactive Project Selector Dropdown & Open App Button -->
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs text-slate-200 shadow-sm focus-within:border-cyan-500">
+          <i class="ph ph-folder text-cyan-400"></i>
+          <select id="projectSelectDropdown" onchange="onProjectSelectChange(this.value)" class="bg-transparent text-white font-semibold text-xs border-none focus:outline-none cursor-pointer pr-2">
+            <option value="all">📁 All Projects (Global View)</option>
+          </select>
+        </div>
+        <a id="btnHeaderOpenApp" href="#" target="_blank" style="display: none;" class="px-2.5 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1 hover:bg-cyan-500/25 transition">
+          <i class="ph ph-arrow-square-out"></i> Open App
+        </a>
       </div>
     </div>
 
@@ -195,15 +202,18 @@
             </div>
           </div>
 
-          <!-- Card 5: Estimated Cost -->
+          <!-- Card 5: Live Token Meter & Estimated Cost -->
           <div class="glass-panel p-3.5 rounded-xl flex flex-col justify-between">
             <div class="flex items-center justify-between text-xs text-slate-400">
-              <span>Estimated Cost</span>
+              <span>Tokens & Cost</span>
               <i class="ph ph-currency-dollar text-slate-500"></i>
             </div>
-            <div class="mt-2 flex items-baseline gap-2">
-              <span class="text-2xl font-bold text-white" id="statCost">$14.20</span>
-              <span class="text-[11px] text-slate-400 font-medium">18% of cap</span>
+            <div class="mt-2 flex flex-col">
+              <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-bold text-white font-mono" id="statCost">$0.00</span>
+                <span class="text-[11px] text-emerald-400 font-medium font-mono" id="statTokensCount">0 tokens</span>
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5" id="statTokensBreakdown">Live across all keys</div>
             </div>
           </div>
 
@@ -213,20 +223,38 @@
       <!-- PROJECT FLOW KANBAN BOARD -->
       <div class="flex-1 flex flex-col">
         <div class="flex items-center justify-between mb-3">
-          <div>
-            <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">DELIVERY</div>
-            <h2 class="text-base font-semibold text-white">Project flow</h2>
-          </div>
           <div class="flex items-center gap-3">
-            <span class="text-xs text-slate-400" id="totalTaskCountBadge">8 visible tasks</span>
+            <div>
+              <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">DELIVERY</div>
+              <h2 class="text-base font-semibold text-white" id="deliveryViewTitle">Project flow</h2>
+            </div>
+            <!-- Segmented View Switcher -->
+            <div class="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs font-medium ml-2">
+              <button id="btnSwitchKanban" onclick="switchDeliveryView('kanban')" class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 flex items-center gap-1.5 transition-all">
+                <i class="ph ph-kanban"></i> Project Flow (Kanban)
+              </button>
+              <button id="btnSwitchPipeline" onclick="switchDeliveryView('pipeline')" class="px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all">
+                <i class="ph ph-git-commit"></i> Live Agent Workspace
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 mr-2" id="totalTaskCountBadge">0 tasks</span>
+            <button onclick="openCodebaseModal()" class="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-md">
+              <i class="ph ph-code"></i> Codebase & AST
+            </button>
+            <button onclick="runBrowserSmokeTestUI()" id="btnSmokeTest" class="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md">
+              <i class="ph ph-browser"></i> Live Smoke Test
+            </button>
             <button onclick="openAssignTaskModal()" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
               <i class="ph ph-plus"></i> New Task
             </button>
           </div>
         </div>
 
-        <!-- 4 Column Kanban Board -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+        <!-- 1. KANBAN BOARD VIEW CONTAINER -->
+        <div id="viewKanbanContainer" class="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
           
           <!-- Column: Backlog -->
           <div class="bg-slate-900/60 border border-slate-800/70 rounded-xl p-3 flex flex-col">
@@ -273,6 +301,206 @@
           </div>
 
         </div>
+
+        <!-- 2. LIVE WORKSPACE PIPELINE VIEW CONTAINER (MATCHING USER DIAGRAM) -->
+        <div id="viewPipelineContainer" class="hidden flex-1 flex flex-col gap-4 overflow-hidden">
+          
+          <!-- Top Telemetry Status Bar -->
+          <div class="flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-2.5 text-xs">
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-semibold text-white">Active Execution Transit:</span>
+                <span id="pipelineTransitPhase" class="text-emerald-400 font-mono font-medium">Developer</span>
+              </div>
+              <span class="text-slate-600">•</span>
+              <div class="text-slate-400" id="pipelineActiveSubtask">Sprint Implementation & Real File Synthesis</div>
+            </div>
+            <div class="flex items-center gap-2.5 text-xs font-mono">
+              <div id="meterOpenRouter" class="flex items-center gap-1 px-2 py-0.5 rounded bg-purple-950/60 border border-purple-800/60 text-purple-300 text-[11px]">
+                <i class="ph-bold ph-lightning text-purple-400"></i> OR: <span id="valOpenRouterTokens">0k</span>
+              </div>
+              <div id="meterGemini" class="flex items-center gap-1 px-2 py-0.5 rounded bg-sky-950/60 border border-sky-800/60 text-sky-300 text-[11px]">
+                <i class="ph-bold ph-sparkle text-sky-400"></i> Gemini: <span id="valGeminiTokens">0k</span>
+              </div>
+              <div id="meterCost" class="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-[11px]">
+                <span id="valLiveTotalCost">$0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pipeline Main Visual Grid (Left 3 Columns: Sequential Chain; Right 1 Column: Management Tower) -->
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1 overflow-y-auto">
+            
+            <!-- LEFT 3 COLUMNS: HORIZONTAL EXECUTION CHAIN & SUBAGENT BRANCH -->
+            <div class="lg:col-span-3 flex flex-col justify-between bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 relative overflow-hidden">
+              
+              <!-- Flow Header -->
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+                <div>
+                  <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="ph ph-git-fork text-sky-400"></i> Primary Software Delivery Pipeline
+                  </h3>
+                  <p class="text-[11px] text-slate-400">Sequential engineering handoffs from Architecture to Review</p>
+                </div>
+                <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">5 Pipeline Stages</span>
+              </div>
+
+              <!-- 5 Horizontal Pipeline Nodes -->
+              <div class="grid grid-cols-5 gap-3 my-auto items-center relative py-6">
+                
+                <!-- Node 1: Architect -->
+                <div onclick="inspectAgentLive('Architect')" id="node_Architect" class="pipeline-node cursor-pointer glass-panel p-3.5 rounded-xl border border-slate-700/60 hover:border-sky-500/50 transition-all flex flex-col justify-between relative bg-slate-900/80 hover:bg-slate-850 shadow-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-slate-400">01</span>
+                    <span class="status-pill text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400" id="pill_Architect">IDLE</span>
+                  </div>
+                  <div class="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 mb-2">
+                    <i class="ph ph-compass text-lg"></i>
+                  </div>
+                  <div class="font-bold text-white text-xs truncate">Architect</div>
+                  <div class="text-[10px] text-slate-400 truncate">System Blueprint</div>
+                </div>
+
+                <!-- Node 2: Designer -->
+                <div onclick="inspectAgentLive('Designer')" id="node_Designer" class="pipeline-node cursor-pointer glass-panel p-3.5 rounded-xl border border-slate-700/60 hover:border-amber-500/50 transition-all flex flex-col justify-between relative bg-slate-900/80 hover:bg-slate-850 shadow-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-slate-400">02</span>
+                    <span class="status-pill text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400" id="pill_Designer">IDLE</span>
+                  </div>
+                  <div class="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2">
+                    <i class="ph ph-palette text-lg"></i>
+                  </div>
+                  <div class="font-bold text-white text-xs truncate">Designer</div>
+                  <div class="text-[10px] text-slate-400 truncate">UI/UX Specs</div>
+                </div>
+
+                <!-- Node 3: Developer (Lead) -->
+                <div onclick="inspectAgentLive('Developer')" id="node_Developer" class="pipeline-node cursor-pointer glass-panel p-3.5 rounded-xl border border-emerald-500/40 bg-slate-900/90 hover:border-emerald-400 transition-all flex flex-col justify-between relative shadow-lg ring-1 ring-emerald-500/20">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-emerald-400">03 (LEAD)</span>
+                    <span class="status-pill text-[9px] px-1.5 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" id="pill_Developer">ACTIVE</span>
+                  </div>
+                  <div class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-2">
+                    <i class="ph ph-code text-lg"></i>
+                  </div>
+                  <div class="font-bold text-white text-xs truncate">Developer</div>
+                  <div class="text-[10px] text-slate-400 truncate">Code & Scaffolding</div>
+                </div>
+
+                <!-- Node 4: Tester -->
+                <div onclick="inspectAgentLive('Tester')" id="node_Tester" class="pipeline-node cursor-pointer glass-panel p-3.5 rounded-xl border border-slate-700/60 hover:border-purple-500/50 transition-all flex flex-col justify-between relative bg-slate-900/80 hover:bg-slate-850 shadow-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-slate-400">04</span>
+                    <span class="status-pill text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400" id="pill_Tester">IDLE</span>
+                  </div>
+                  <div class="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-2">
+                    <i class="ph ph-check-square-offset text-lg"></i>
+                  </div>
+                  <div class="font-bold text-white text-xs truncate">Tester</div>
+                  <div class="text-[10px] text-slate-400 truncate">Pytest & Playwright</div>
+                </div>
+
+                <!-- Node 5: Reviewer -->
+                <div onclick="inspectAgentLive('Reviewer')" id="node_Reviewer" class="pipeline-node cursor-pointer glass-panel p-3.5 rounded-xl border border-slate-700/60 hover:border-rose-500/50 transition-all flex flex-col justify-between relative bg-slate-900/80 hover:bg-slate-850 shadow-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-slate-400">05</span>
+                    <span class="status-pill text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400" id="pill_Reviewer">IDLE</span>
+                  </div>
+                  <div class="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-2">
+                    <i class="ph ph-shield-check text-lg"></i>
+                  </div>
+                  <div class="font-bold text-white text-xs truncate">Reviewer</div>
+                  <div class="text-[10px] text-slate-400 truncate">Security & Audit</div>
+                </div>
+
+              </div>
+
+              <!-- DYNAMIC SUB-AGENT ASSISTANT BRANCH (BENEATH DEVELOPER) -->
+              <div class="pt-4 border-t border-slate-800/80 flex flex-col items-center">
+                <div class="flex flex-col items-center mb-1">
+                  <div class="h-6 w-0.5 bg-gradient-to-b from-emerald-500/60 to-sky-400/80"></div>
+                  <i class="ph-bold ph-caret-down text-sky-400 -mt-1 text-xs"></i>
+                </div>
+                
+                <!-- Sub-Agent Card -->
+                <div onclick="inspectSubagentLive()" id="subagentCard" class="w-full max-w-md bg-slate-950/80 border border-sky-500/30 hover:border-sky-400/60 rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition-all shadow-md">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                      <i class="ph ph-robot text-lg"></i>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-white text-xs" id="subagentSpecialtyTitle">Sub-Agent / Assistant</span>
+                        <span class="text-[9px] bg-sky-950 text-sky-300 border border-sky-800/50 px-1.5 py-0.2 rounded font-semibold" id="subagentStatusBadge">READY</span>
+                      </div>
+                      <p class="text-[11px] text-slate-400" id="subagentDescText">Dynamic assistant spawned on demand by Developer</p>
+                    </div>
+                  </div>
+                  <i class="ph ph-caret-right text-slate-500"></i>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT 1 COLUMN: MANAGEMENT TOWER (MATCHING USER DIAGRAM) -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col gap-3">
+              <div class="pb-2 border-b border-slate-800 flex items-center justify-between">
+                <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="ph ph-broadcast text-emerald-400"></i> Management Tower
+                </h4>
+                <span class="text-[10px] text-slate-400 font-mono">Continuous</span>
+              </div>
+
+              <!-- Coordinator -->
+              <div onclick="inspectAgentLive('Coordinator')" id="tower_Coordinator" class="pipeline-node cursor-pointer bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 p-3 rounded-xl flex items-center justify-between transition-all">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm">
+                    <i class="ph ph-user-gear"></i>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-white text-xs">Coordinator</div>
+                    <div class="text-[10px] text-slate-400">WBS & Task Routing</div>
+                  </div>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400" id="pill_Coordinator">ACTIVE</span>
+              </div>
+
+              <!-- GitHub Manager -->
+              <div onclick="inspectAgentLive('GitHub Manager')" id="tower_GitHubManager" class="pipeline-node cursor-pointer bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 p-3 rounded-xl flex items-center justify-between transition-all">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm">
+                    <i class="ph ph-git-branch"></i>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-white text-xs">Git Manager</div>
+                    <div class="text-[10px] text-slate-400">Branches & Commits</div>
+                  </div>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400" id="pill_GitHubManager">IDLE</span>
+              </div>
+
+              <!-- Status & Memory Manager -->
+              <div onclick="inspectAgentLive('Memory & Status Manager')" id="tower_MemoryStatusManager" class="pipeline-node cursor-pointer bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 p-3 rounded-xl flex items-center justify-between transition-all">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm">
+                    <i class="ph ph-database"></i>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-white text-xs">Status Manager</div>
+                    <div class="text-[10px] text-slate-400">SQLite & Memory Store</div>
+                  </div>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400" id="pill_MemoryStatusManager">IDLE</span>
+              </div>
+
+              <div class="mt-auto pt-3 border-t border-slate-800/80 text-[10px] text-slate-500">
+                Click any agent in the pipeline or tower to inspect real-time execution traces and thoughts.
+              </div>
+            </div>
+
+          </div>
+        </div>
       </div>
 
     </main>
@@ -299,6 +527,9 @@
 
     <!-- Drawer Quick Actions Banner -->
     <div class="bg-slate-900/50 px-5 py-2.5 border-b border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs">
+      <button id="decomposeActionBtn" onclick="decomposeProjectFromChat()" class="whitespace-nowrap px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-medium flex items-center gap-1.5 hidden">
+        <i class="ph-bold ph-tree-structure"></i> Break Project Into Tasks
+      </button>
       <button onclick="quickPrompt('What is the current status of the project?')" class="whitespace-nowrap px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60">
         📊 What's project status?
       </button>
@@ -397,15 +628,162 @@
     </div>
   </div>
 
+  <!-- TASK OUTPUT / DETAILS MODAL -->
+  <div id="taskOutputModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] p-6 shadow-2xl flex flex-col space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 id="modalOutputTitle" class="font-bold text-white text-base">Task Output & Artifacts</h3>
+          <p id="modalOutputSubtitle" class="text-xs text-slate-400">Assigned Agent & Execution details</p>
+        </div>
+        <button onclick="closeTaskOutputModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <i class="ph ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Task Specification</label>
+          <div id="modalOutputDesc" class="bg-slate-950/80 p-3 rounded-lg border border-slate-800 text-slate-300"></div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-emerald-400 uppercase tracking-wider mb-1">Output / Generated Code / Plan</label>
+          <pre id="modalOutputText" class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 text-slate-200 font-mono text-[11px] whitespace-pre-wrap overflow-x-auto leading-relaxed"></pre>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+        <span class="text-slate-500 font-mono" id="modalOutputId"></span>
+        <button onclick="closeTaskOutputModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT APP LOGIC -->
   <script>
     let currentAgent = null;
     let agentsData = [];
     let tasksData = {};
+    let currentSelectedProject = 'ai_engineer_resume_roadmap';
+    let allProjectsData = [];
 
     async function init() {
+      await loadProjects();
       await refreshData();
-      setInterval(refreshData, 10000); // Polling every 10s for live updates
+      await syncTokenSummary();
+      setInterval(refreshData, 8000); // Polling every 8s for live updates
+      setInterval(syncTokenSummary, 5000); // Live token meter & cost polling
+    }
+
+    async function loadProjects() {
+      try {
+        const res = await fetch('/api/projects');
+        const payload = await res.json();
+        allProjectsData = Array.isArray(payload) ? payload : (payload.projects || []);
+        const select = document.getElementById('projectSelectDropdown');
+        if (!select) return;
+
+        let html = '<option value="all">📁 All Projects (Global View)</option>';
+        allProjectsData.forEach(p => {
+          const badge = p.has_app ? '🌐' : '📦';
+          const tasksInfo = `${p.tasks_done || 0}/${p.tasks_total || 0} done`;
+          const costInfo = (p.cost_usd && p.cost_usd > 0) ? ` - $${p.cost_usd}` : '';
+          html += `<option value="${p.slug}">${badge} ${p.name} (${tasksInfo}${costInfo})</option>`;
+        });
+        select.innerHTML = html;
+
+        // Set default selection
+        const match = allProjectsData.find(p => p.slug === currentSelectedProject);
+        if (match) {
+          select.value = currentSelectedProject;
+        } else if (allProjectsData.length > 0) {
+          currentSelectedProject = allProjectsData[0].slug;
+          select.value = currentSelectedProject;
+        } else {
+          currentSelectedProject = 'all';
+          select.value = 'all';
+        }
+        updateProjectHeaderAndButtons();
+      } catch (err) {
+        console.error("Failed to load projects:", err);
+      }
+    }
+
+    function onProjectSelectChange(slug) {
+      currentSelectedProject = slug;
+      updateProjectHeaderAndButtons();
+      refreshData();
+      syncPipelineTelemetry();
+      syncTokenSummary();
+    }
+
+    function updateProjectHeaderAndButtons() {
+      const titleEl = document.getElementById('workspaceNameTitle');
+      const openAppBtn = document.getElementById('btnHeaderOpenApp');
+
+      if (currentSelectedProject === 'all') {
+        if (titleEl) titleEl.textContent = 'Persistent CrewAI SDLC - Global View';
+        if (openAppBtn) openAppBtn.style.display = 'none';
+      } else {
+        const match = allProjectsData.find(p => p.slug === currentSelectedProject);
+        const displayName = match ? match.name : currentSelectedProject.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        if (titleEl) titleEl.textContent = displayName;
+
+        if (openAppBtn) {
+          if (match && match.has_app && match.app_url) {
+            openAppBtn.href = match.app_url;
+            openAppBtn.style.display = 'inline-flex';
+          } else {
+            openAppBtn.style.display = 'none';
+          }
+        }
+      }
+    }
+
+    async function syncTokenSummary() {
+      try {
+        const projectParam = currentSelectedProject && currentSelectedProject !== 'all' 
+          ? `?project_id=${encodeURIComponent(currentSelectedProject)}` 
+          : '';
+        const res = await fetch('/api/tokens/summary' + projectParam);
+        const data = await res.json();
+
+        // Update KPI Card
+        const costStr = '$' + (data.total_cost_usd !== undefined ? data.total_cost_usd.toFixed(4) : '0.0000');
+        const costEl = document.getElementById('statCost');
+        if (costEl) costEl.textContent = costStr;
+
+        const tokensEl = document.getElementById('statTokensCount');
+        if (tokensEl) tokensEl.textContent = `${(data.total_tokens || 0).toLocaleString()} tokens`;
+
+        const breakdownEl = document.getElementById('statTokensBreakdown');
+        if (breakdownEl) {
+          const inTokens = (data.total_prompt_tokens || 0).toLocaleString();
+          const outTokens = (data.total_completion_tokens || 0).toLocaleString();
+          breakdownEl.textContent = `${data.total_calls || 0} calls | In: ${inTokens} Out: ${outTokens}`;
+        }
+
+        // Update Live Pipeline Provider Pills
+        const orPill = document.getElementById('valOpenRouterTokens');
+        if (orPill) {
+          const orTokens = data.by_provider?.openrouter?.tokens || data.by_provider?.openrouter?.total_tokens || 0;
+          orPill.textContent = orTokens >= 1000 ? (orTokens / 1000).toFixed(1) + 'k' : orTokens;
+        }
+
+        const geminiPill = document.getElementById('valGeminiTokens');
+        if (geminiPill) {
+          const gTokens = data.by_provider?.gemini?.tokens || data.by_provider?.gemini?.total_tokens || 0;
+          geminiPill.textContent = gTokens >= 1000 ? (gTokens / 1000).toFixed(1) + 'k' : gTokens;
+        }
+
+        const liveCostPill = document.getElementById('valLiveTotalCost');
+        if (liveCostPill) {
+          liveCostPill.textContent = costStr;
+        }
+      } catch (err) {
+        console.error("Failed to sync token summary:", err);
+      }
     }
 
     async function refreshData() {
@@ -420,8 +798,11 @@
         agentsData = await resAgents.json();
         renderAgents(agentsData);
 
-        // Fetch tasks
-        const resTasks = await fetch('/api/tasks');
+        // Fetch tasks filtered by project
+        const projectParam = currentSelectedProject && currentSelectedProject !== 'all' 
+          ? `?project_id=${encodeURIComponent(currentSelectedProject)}` 
+          : '';
+        const resTasks = await fetch('/api/tasks' + projectParam);
         tasksData = await resTasks.json();
         renderTasks(tasksData);
       } catch (err) {
@@ -434,7 +815,6 @@
       document.getElementById('statCompletedTasks').textContent = data.completed_tasks || 0;
       document.getElementById('statOpenRisks').textContent = data.open_risks || 0;
       document.getElementById('statFailedChecks').textContent = data.failed_checks || 0;
-      document.getElementById('statCost').textContent = data.estimated_cost || '$14.20';
       document.getElementById('activeAgentCount').textContent = data.active_agents || 8;
     }
 
@@ -518,13 +898,15 @@
 
           card.innerHTML = `
             <div class="flex items-start justify-between gap-2">
-              <span class="font-medium text-slate-200 leading-snug line-clamp-2">${task.title}</span>
+              <span class="font-medium text-slate-200 leading-snug line-clamp-2 cursor-pointer hover:text-emerald-300" onclick="viewTaskOutput('${task.id}')">${task.title}</span>
               <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${priorityClass}">${task.priority || 'P1'}</span>
             </div>
 
             <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
               <span class="text-slate-300 font-medium">${task.assigned_role}</span>
-              <span class="text-[10px] text-slate-500">${task.checks || 'verified'}</span>
+              <button onclick="viewTaskOutput('${task.id}')" class="text-[10px] text-emerald-400/90 hover:text-emerald-300 font-medium flex items-center gap-1">
+                <i class="ph ph-file-text"></i> View Output
+              </button>
             </div>
 
             <div class="flex items-center justify-between pt-1">
@@ -535,9 +917,15 @@
                 <option value="Done" ${colName === 'Done' ? 'selected' : ''}>Done</option>
               </select>
 
-              <button onclick="chatAboutTask('${task.assigned_role}', '${task.title.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-emerald-400 text-[11px] flex items-center gap-1" title="Chat with assigned agent">
-                <i class="ph ph-chat-teardrop-dots text-sm"></i> Chat
-              </button>
+              <div class="flex items-center gap-1.5">
+                ${colName !== 'Done' ? `
+                <button onclick="runTaskCard('${task.id}')" class="text-emerald-400 hover:text-emerald-300 text-[11px] flex items-center gap-1 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.5 rounded" title="Execute this task now with assigned agent">
+                  <i class="ph-bold ph-play"></i> Run
+                </button>` : ''}
+                <button onclick="chatAboutTask('${task.assigned_role}', '${task.title.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-emerald-400 text-[11px] flex items-center gap-1" title="Chat with assigned agent">
+                  <i class="ph ph-chat-teardrop-dots text-sm"></i>
+                </button>
+              </div>
             </div>
           `;
           container.appendChild(card);
@@ -545,6 +933,56 @@
       }
 
       document.getElementById('totalTaskCountBadge').textContent = `${totalTasks} visible tasks`;
+    }
+
+    function viewTaskOutput(taskId) {
+      let foundTask = null;
+      for (const col of Object.values(tasksData)) {
+        const match = col.find(t => t.id === taskId);
+        if (match) { foundTask = match; break; }
+      }
+      if (!foundTask) return;
+
+      document.getElementById('modalOutputTitle').textContent = foundTask.title;
+      document.getElementById('modalOutputSubtitle').textContent = `Assigned Role: ${foundTask.assigned_role} | Status: ${foundTask.status} | Priority: ${foundTask.priority || 'P1'}`;
+      document.getElementById('modalOutputDesc').textContent = foundTask.description || foundTask.title;
+      
+      const outBlock = document.getElementById('modalOutputText');
+      if (foundTask.actual_output && foundTask.actual_output.trim()) {
+        outBlock.textContent = foundTask.actual_output;
+      } else if (foundTask.status === 'Done') {
+        outBlock.textContent = "Task verified and completed in persistent database. Check workspace directory for generated artifacts.";
+      } else {
+        outBlock.textContent = "No execution output yet. Click '[▶ Run]' on the task card to trigger the assigned agent.";
+      }
+
+      document.getElementById('modalOutputId').textContent = `Task ID: ${foundTask.id}`;
+      document.getElementById('taskOutputModal').classList.remove('hidden');
+    }
+
+    function closeTaskOutputModal() {
+      document.getElementById('taskOutputModal').classList.add('hidden');
+    }
+
+    async function runTaskCard(taskId) {
+      try {
+        await moveTask(taskId, 'In Progress');
+        const targetSlug = (currentSelectedProject && currentSelectedProject !== 'all') ? currentSelectedProject : 'ai_engineer_resume_roadmap';
+        const res = await fetch(`/api/tasks/${taskId}/execute`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ slug: targetSlug })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await refreshData();
+          await syncTokenSummary();
+        } else {
+          alert('Error executing task: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        console.error("Task execution error:", err);
+      }
     }
 
     async function moveTask(taskId, newStatus) {
@@ -560,7 +998,7 @@
       }
     }
 
-    function openChatDrawer(agent) {
+    async function openChatDrawer(agent) {
       currentAgent = agent;
       document.getElementById('drawerAgentName').textContent = agent.name;
       document.getElementById('drawerAgentRole').textContent = agent.description;
@@ -568,6 +1006,166 @@
       const drawer = document.getElementById('chatDrawer');
       drawer.classList.remove('translate-x-full');
       document.getElementById('chatInput').focus();
+
+      // Show/hide Decompose button specifically for Coordinator
+      const decomposeBtn = document.getElementById('decomposeActionBtn');
+      if (decomposeBtn) {
+        if (agent.id === 'coordinator') {
+          decomposeBtn.classList.remove('hidden');
+        } else {
+          decomposeBtn.classList.add('hidden');
+        }
+      }
+
+      // Load past persistent chat history from database
+      await loadChatHistory(agent.id);
+    }
+
+    async function loadChatHistory(agentId) {
+      const container = document.getElementById('chatMessages');
+      container.innerHTML = `
+        <div class="flex gap-3">
+          <div class="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
+            <i class="ph-bold ph-robot"></i>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl rounded-tl-none text-xs text-slate-200 max-w-[85%] leading-relaxed">
+            Hello! I am connected to the persistent project memory. Ask me anything, or give me requirements to decompose and delegate.
+          </div>
+        </div>
+      `;
+
+      try {
+        const res = await fetch(`/api/chat/history?agent_id=${agentId}`);
+        const history = await res.json();
+        history.forEach(item => {
+          // Render User Msg with rewind/edit actions
+          const userBubble = document.createElement('div');
+          userBubble.className = "flex gap-3 justify-end group items-start";
+          userBubble.innerHTML = `
+            <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1 mt-1 text-[11px]">
+              <button onclick="rewindChat('${item.trace_id}', true)" title="Rewind & Edit prompt" class="text-slate-400 hover:text-emerald-400 bg-slate-800/80 hover:bg-slate-700 p-1 rounded">
+                <i class="ph-bold ph-pencil-simple"></i>
+              </button>
+              <button onclick="rewindChat('${item.trace_id}', false)" title="Rewind & Regenerate answer" class="text-slate-400 hover:text-sky-400 bg-slate-800/80 hover:bg-slate-700 p-1 rounded">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i>
+              </button>
+            </div>
+            <div class="bg-emerald-500/15 border border-emerald-500/30 p-3 rounded-xl rounded-tr-none text-xs text-white max-w-[80%] leading-relaxed">
+              ${item.prompt}
+            </div>
+          `;
+          container.appendChild(userBubble);
+
+          // Render Agent Msg
+          const agentBubble = document.createElement('div');
+          agentBubble.className = "flex gap-3";
+          agentBubble.innerHTML = `
+            <div class="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
+              <i class="ph-bold ph-robot"></i>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl rounded-tl-none text-xs text-slate-200 max-w-[85%] leading-relaxed space-y-1.5">
+              <div>${item.response.replace(/\n/g, '<br/>')}</div>
+              <div class="text-[10px] text-slate-500 font-mono border-t border-slate-800/80 pt-1 flex items-center justify-between">
+                <span>✓ Recorded in SQLite trace history</span>
+                <span class="text-slate-600">${item.timestamp ? item.timestamp.split('T')[1].slice(0, 8) : ''}</span>
+              </div>
+            </div>
+          `;
+          container.appendChild(agentBubble);
+        });
+        container.scrollTop = container.scrollHeight;
+      } catch (err) {
+        console.error("Failed to load chat history:", err);
+      }
+    }
+
+    async function rewindChat(traceId, editMode = false) {
+      if (!currentAgent) return;
+      if (!confirm("Rewind conversation to this point? All messages after this will be deleted.")) return;
+
+      try {
+        const res = await fetch('/api/chat/rollback', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            trace_id: traceId,
+            agent_id: currentAgent.id
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          // Reload conversation history up to this trimmed point
+          await loadChatHistory(currentAgent.id);
+          
+          const input = document.getElementById('chatInput');
+          input.value = data.restored_prompt || '';
+          input.focus();
+
+          // If not just editing, auto-resend to regenerate immediately
+          if (!editMode && data.restored_prompt) {
+            handleSendMessage();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to rollback chat:", err);
+      }
+    }
+
+    async function decomposeProjectFromChat() {
+      const input = document.getElementById('chatInput');
+      const goal = input.value.trim() || prompt("Enter what project or tool you want the Coordinator to decompose into tasks:");
+      if (!goal) return;
+
+      const container = document.getElementById('chatMessages');
+      const loadingBubble = document.createElement('div');
+      loadingBubble.className = "flex gap-3";
+      loadingBubble.innerHTML = `
+        <div class="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
+          <i class="ph-bold ph-gear animate-spin"></i>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs text-slate-400">
+          Coordinator is decomposing project into tasks for the team...
+        </div>
+      `;
+      container.appendChild(loadingBubble);
+      container.scrollTop = container.scrollHeight;
+
+      try {
+        const targetSlug = (currentSelectedProject && currentSelectedProject !== 'all') ? currentSelectedProject : 'production_app';
+        const res = await fetch('/api/decompose', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ goal, slug: targetSlug })
+        });
+        const data = await res.json();
+        loadingBubble.remove();
+
+        const agentBubble = document.createElement('div');
+        agentBubble.className = "flex gap-3";
+        if (data.success) {
+          const taskListHtml = data.created_tasks.map(t => `<li><strong>${t.role}:</strong> ${t.title}</li>`).join('');
+          agentBubble.innerHTML = `
+            <div class="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
+              <i class="ph-bold ph-check"></i>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs text-slate-200 max-w-[85%] leading-relaxed space-y-2">
+              <p class="font-semibold text-emerald-400">Project decomposed into board tasks:</p>
+              <ul class="list-disc pl-4 space-y-1 text-slate-300">${taskListHtml}</ul>
+              <p class="text-[11px] text-slate-400">Check the Project Flow board to see the new cards!</p>
+            </div>
+          `;
+          await loadProjects();
+          await refreshData();
+          await syncTokenSummary();
+        } else {
+          agentBubble.innerHTML = `<div class="bg-red-950/60 text-red-300 p-3 rounded-xl text-xs">${data.error || 'Failed to decompose'}</div>`;
+        }
+        container.appendChild(agentBubble);
+        container.scrollTop = container.scrollHeight;
+      } catch (err) {
+        loadingBubble.remove();
+        console.error("Decomposition failed:", err);
+      }
     }
 
     function closeChatDrawer() {
@@ -670,23 +1268,479 @@
       const assigned_role = document.getElementById('modalTaskRole').value;
       const priority = document.getElementById('modalTaskPriority').value;
       const status = document.getElementById('modalTaskStatus').value;
+      const targetSlug = (currentSelectedProject && currentSelectedProject !== 'all') ? currentSelectedProject : 'default_project';
 
       try {
         await fetch('/api/tasks', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ title, assigned_role, priority, status })
+          body: JSON.stringify({ title, assigned_role, priority, status, project_id: targetSlug })
         });
         closeAssignTaskModal();
         document.getElementById('modalTaskTitle').value = '';
+        await loadProjects();
         await refreshData();
       } catch (err) {
         console.error("Failed to create task:", err);
       }
     }
 
+    // Codebase & AST Modal
+    async function openCodebaseModal() {
+      const modal = document.getElementById('codebaseModal');
+      modal.classList.remove('hidden');
+      const targetSlug = (currentSelectedProject && currentSelectedProject !== 'all') ? currentSelectedProject : 'production_app';
+      
+      const modalDesc = modal.querySelector('p.text-xs code');
+      if (modalDesc) modalDesc.textContent = `projects/${targetSlug}/`;
+
+      document.getElementById('codebaseFilesList').innerHTML = '<div class="text-slate-500 animate-pulse">Loading physical workspace files...</div>';
+      document.getElementById('codebaseRepoMap').textContent = 'Extracting AST symbols...';
+      document.getElementById('codebaseGitLog').textContent = 'Querying git history...';
+
+      try {
+        const res = await fetch(`/api/projects/status?slug=${targetSlug}`);
+        const data = await res.json();
+        if (data.exists) {
+          const filesHtml = (data.files || []).map(f => `<li class="font-mono text-xs text-sky-300 py-0.5">📄 ${f}</li>`).join('');
+          document.getElementById('codebaseFilesList').innerHTML = filesHtml || '<div class="text-slate-500">No files created yet.</div>';
+          document.getElementById('codebaseRepoMap').textContent = data.repo_map || 'No Python files found';
+          document.getElementById('codebaseGitLog').textContent = data.git_log || 'No commits yet';
+        } else {
+          document.getElementById('codebaseFilesList').innerHTML = `<div class="text-amber-400/80 text-xs">${data.message}</div>`;
+          document.getElementById('codebaseRepoMap').textContent = 'Workspace not yet initialized on disk.';
+          document.getElementById('codebaseGitLog').textContent = 'Git repo not initialized.';
+        }
+      } catch (err) {
+        document.getElementById('codebaseFilesList').innerHTML = `<div class="text-red-400 text-xs">Error: ${err.message}</div>`;
+      }
+    }
+
+    function closeCodebaseModal() {
+      document.getElementById('codebaseModal').classList.add('hidden');
+    }
+
+    // Live Browser Smoke Test Modal & Runner
+    async function runBrowserSmokeTestUI() {
+      const targetSlug = (currentSelectedProject && currentSelectedProject !== 'all') ? currentSelectedProject : 'production_app';
+      const btn = document.getElementById('btnSmokeTest');
+      const modal = document.getElementById('smokeTestModal');
+      modal.classList.remove('hidden');
+      btn.innerHTML = '<i class="ph ph-circle-notch animate-spin"></i> Testing...';
+      
+      document.getElementById('smokeStatusBadge').className = 'px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+      document.getElementById('smokeStatusBadge').textContent = 'Running Chromium...';
+      document.getElementById('smokeUrl').textContent = `http://127.0.0.1:8000/projects/${targetSlug}/index.html`;
+      document.getElementById('smokeTitle').textContent = 'Launching headless browser...';
+      document.getElementById('smokeErrors').textContent = 'Collecting console logs...';
+      document.getElementById('smokeScreenshot').src = '';
+      document.getElementById('smokeScreenshotContainer').classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/smoke-test', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ slug: targetSlug })
+        });
+        const data = await res.json();
+        
+        btn.innerHTML = '<i class="ph ph-browser"></i> Live Smoke Test';
+        
+        if (data.success) {
+          document.getElementById('smokeStatusBadge').className = 'px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+          document.getElementById('smokeStatusBadge').textContent = `✅ PASSED (HTTP ${data.status_code || 200}) in ${data.duration_seconds}s`;
+        } else {
+          document.getElementById('smokeStatusBadge').className = 'px-2 py-0.5 rounded text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30';
+          document.getElementById('smokeStatusBadge').textContent = `❌ FAILED: ${data.error_message || 'HTTP Error'}`;
+        }
+
+        document.getElementById('smokeUrl').textContent = data.url;
+        document.getElementById('smokeTitle').textContent = data.page_title || 'N/A';
+        document.getElementById('smokeErrors').textContent = (data.console_errors && data.console_errors.length) ? data.console_errors.join('\n') : '0 console errors detected';
+        
+        // Show screenshot
+        if (data.screenshot_path) {
+          document.getElementById('smokeScreenshotContainer').classList.remove('hidden');
+          document.getElementById('smokeScreenshot').src = `/api/screenshots/${targetSlug}/smoke_test_pass.png?t=${Date.now()}`;
+        }
+      } catch (err) {
+        btn.innerHTML = '<i class="ph ph-browser"></i> Live Smoke Test';
+        document.getElementById('smokeStatusBadge').className = 'px-2 py-0.5 rounded text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30';
+        document.getElementById('smokeStatusBadge').textContent = `❌ Error: ${err.message}`;
+      }
+    }
+
+    function closeSmokeTestModal() {
+      document.getElementById('smokeTestModal').classList.add('hidden');
+    }
+
+    // Delivery View Switcher (Kanban vs Live Workspace Pipeline)
+    let currentDeliveryView = 'kanban';
+    let pipelineTelemetryData = null;
+
+    function switchDeliveryView(view) {
+      currentDeliveryView = view;
+      const kanbanView = document.getElementById('viewKanbanContainer');
+      const pipelineView = document.getElementById('viewPipelineContainer');
+      const btnKanban = document.getElementById('btnSwitchKanban');
+      const btnPipeline = document.getElementById('btnSwitchPipeline');
+      const title = document.getElementById('deliveryViewTitle');
+
+      if (view === 'pipeline') {
+        kanbanView.classList.add('hidden');
+        pipelineView.classList.remove('hidden');
+        btnPipeline.className = 'px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 flex items-center gap-1.5 transition-all';
+        btnKanban.className = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all';
+        title.textContent = 'Live Agent Workspace';
+        syncPipelineTelemetry();
+      } else {
+        pipelineView.classList.add('hidden');
+        kanbanView.classList.remove('hidden');
+        btnKanban.className = 'px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 flex items-center gap-1.5 transition-all';
+        btnPipeline.className = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 rounded-md flex items-center gap-1.5 transition-all';
+        title.textContent = 'Project flow';
+      }
+    }
+
+    async function syncPipelineTelemetry() {
+      try {
+        const projectParam = (currentSelectedProject && currentSelectedProject !== 'all') 
+          ? `?project_id=${encodeURIComponent(currentSelectedProject)}` 
+          : '';
+        const res = await fetch('/api/pipeline/live' + projectParam);
+        const data = await res.json();
+        if (!data.success) return;
+        pipelineTelemetryData = data;
+
+        const activeRole = data.active_transit_role || 'Developer';
+        document.getElementById('pipelineTransitPhase').textContent = activeRole;
+
+        // Update 5 sequential nodes
+        (data.pipeline_nodes || []).forEach(node => {
+          const pill = document.getElementById(`pill_${node.role}`);
+          const card = document.getElementById(`node_${node.role}`);
+          if (pill) {
+            const isBusy = (node.status || '').toLowerCase() in ['busy', 'active', 'running'];
+            pill.textContent = isBusy ? 'BUSY' : (node.status || 'IDLE').toUpperCase();
+            pill.className = isBusy 
+              ? 'status-pill text-[9px] px-1.5 py-0.5 rounded font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+              : 'status-pill text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400';
+          }
+          if (card) {
+            if (node.role === activeRole) {
+              card.classList.add('ring-2', 'ring-emerald-400', 'shadow-emerald-500/20');
+            } else {
+              card.classList.remove('ring-2', 'ring-emerald-400', 'shadow-emerald-500/20');
+            }
+          }
+        });
+
+        // Update management tower nodes
+        (data.management_nodes || []).forEach(node => {
+          const idClean = node.role.replace(/[\s&]/g, '');
+          const pill = document.getElementById(`pill_${idClean}`);
+          if (pill) {
+            const isBusy = (node.status || '').toLowerCase() in ['busy', 'active', 'running'];
+            pill.textContent = isBusy ? 'BUSY' : (node.status || 'IDLE').toUpperCase();
+            pill.className = isBusy 
+              ? 'text-[9px] px-1.5 py-0.5 rounded font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+              : 'text-[9px] px-1.5 py-0.5 rounded font-semibold bg-slate-800 text-slate-400';
+          }
+        });
+
+        // Update sub-agent branch
+        if (data.subagents && data.subagents.length > 0) {
+          const sub = data.subagents[0];
+          document.getElementById('subagentSpecialtyTitle').textContent = `Sub-Agent: ${sub.specialty}`;
+          document.getElementById('subagentStatusBadge').textContent = sub.status.toUpperCase();
+          document.getElementById('subagentStatusBadge').className = sub.status === 'busy' 
+            ? 'text-[9px] bg-amber-950 text-amber-300 border border-amber-800/50 px-1.5 py-0.2 rounded font-semibold animate-pulse'
+            : 'text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-800/50 px-1.5 py-0.2 rounded font-semibold';
+          document.getElementById('subagentDescText').textContent = sub.current_task || 'Assisting Lead Developer with modules';
+          document.getElementById('subagentCard').className = 'w-full max-w-md bg-slate-950/90 border border-sky-400 rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition-all shadow-lg ring-1 ring-sky-400/40';
+        } else {
+          document.getElementById('subagentSpecialtyTitle').textContent = 'Sub-Agent / Assistant';
+          document.getElementById('subagentStatusBadge').textContent = 'READY';
+          document.getElementById('subagentStatusBadge').className = 'text-[9px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.2 rounded font-semibold';
+          document.getElementById('subagentDescText').textContent = 'On-demand assistant spawned dynamically by Developer';
+          document.getElementById('subagentCard').className = 'w-full max-w-md bg-slate-950/60 border border-slate-800 hover:border-sky-500/40 rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition-all shadow-md';
+        }
+      } catch (err) {
+        console.error('Failed to sync pipeline telemetry:', err);
+      }
+    }
+
+    // Inspect Agent Live Drawer
+    function inspectAgentLive(roleName) {
+      const drawer = document.getElementById('telemetryDrawer');
+      drawer.classList.remove('translate-x-full');
+      
+      document.getElementById('telemetryRoleName').textContent = roleName;
+      document.getElementById('telemetryStatusBadge').textContent = 'SYNCING';
+      
+      // Look up traces in latest telemetry
+      let agentTraces = [];
+      let agentStatus = 'IDLE';
+      let activeTask = 'No active task';
+
+      if (pipelineTelemetryData) {
+        const allNodes = [...(pipelineTelemetryData.pipeline_nodes || []), ...(pipelineTelemetryData.management_nodes || [])];
+        const match = allNodes.find(n => n.role.toLowerCase() === roleName.toLowerCase());
+        if (match) {
+          agentTraces = match.traces || [];
+          agentStatus = (match.status || 'idle').toUpperCase();
+          activeTask = match.current_task_id || 'Listening for tasks';
+          
+          const tokensEl = document.getElementById('telemetryAgentTokens');
+          const costEl = document.getElementById('telemetryAgentCost');
+          if (tokensEl) {
+            tokensEl.textContent = match.tokens !== undefined ? `${(match.tokens || 0).toLocaleString()} tokens` : '0 tokens';
+          }
+          if (costEl) {
+            costEl.textContent = match.cost_usd !== undefined ? `$${(match.cost_usd || 0).toFixed(4)}` : '$0.0000';
+          }
+        }
+      }
+
+      document.getElementById('telemetryStatusBadge').textContent = agentStatus;
+      document.getElementById('telemetryStatusBadge').className = agentStatus === 'BUSY'
+        ? 'px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+        : 'px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+
+      document.getElementById('telemetryCurrentTask').textContent = activeTask;
+
+      // Render traces list
+      const traceContainer = document.getElementById('telemetryTracesList');
+      if (agentTraces.length === 0) {
+        traceContainer.innerHTML = '<div class="text-slate-500 p-3">No recent execution traces logged for this agent.</div>';
+      } else {
+        traceContainer.innerHTML = agentTraces.map(t => {
+          let preview = '';
+          if (t.payload) {
+            preview = t.payload.output_preview || t.payload.task || t.payload.prompt || JSON.stringify(t.payload);
+          }
+          return `
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span class="font-mono text-sky-400 font-semibold">[${t.event_type || 'trace'}]</span>
+                <span class="text-slate-500 text-[10px]">${t.timestamp ? t.timestamp.split('T')[1].slice(0, 8) : ''}</span>
+              </div>
+              <div class="font-mono text-xs text-slate-200 whitespace-pre-wrap max-h-32 overflow-y-auto">${preview}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Store current role for action buttons
+      drawer.dataset.currentRole = roleName;
+    }
+
+    function inspectSubagentLive() {
+      if (pipelineTelemetryData && pipelineTelemetryData.subagents && pipelineTelemetryData.subagents.length > 0) {
+        inspectAgentLive(pipelineTelemetryData.subagents[0].id);
+        document.getElementById('telemetryRoleName').textContent = pipelineTelemetryData.subagents[0].specialty;
+      } else {
+        inspectAgentLive('Developer');
+      }
+    }
+
+    function closeTelemetryDrawer() {
+      document.getElementById('telemetryDrawer').classList.add('translate-x-full');
+    }
+
+    function chatFromTelemetry() {
+      const role = document.getElementById('telemetryDrawer').dataset.currentRole || 'Coordinator';
+      closeTelemetryDrawer();
+      const agentObj = agentsData.find(a => a.name.toLowerCase().includes(role.toLowerCase())) || agentsData[0];
+      openChatDrawer(agentObj);
+    }
+
     // Launch
-    window.onload = init;
+    window.onload = function() {
+      init();
+      // Periodically sync pipeline telemetry every 4s
+      setInterval(() => {
+        if (currentDeliveryView === 'pipeline') {
+          syncPipelineTelemetry();
+        }
+      }, 4000);
+    };
   </script>
+
+  <!-- CODEBASE & AST MODAL -->
+  <div id="codebaseModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+            <i class="ph ph-folder-open text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Physical Project Workspace & AST Map</h3>
+            <p class="text-xs text-slate-400">Target path: <code>projects/production_app/</code></p>
+          </div>
+        </div>
+        <button onclick="closeCodebaseModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white">
+          <i class="ph ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-5 text-xs">
+        <!-- Grid layout: Files & Git on left, AST Map on right -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Files & Git -->
+          <div class="space-y-4">
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+              <h4 class="font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
+                <i class="ph ph-files text-sky-400"></i> Workspace Files on Disk
+              </h4>
+              <ul id="codebaseFilesList" class="space-y-1 max-h-48 overflow-y-auto"></ul>
+            </div>
+
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+              <h4 class="font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
+                <i class="ph ph-git-commit text-emerald-400"></i> Local Git History
+              </h4>
+              <pre id="codebaseGitLog" class="font-mono text-[11px] text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto"></pre>
+            </div>
+          </div>
+
+          <!-- AST Codebase Map -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col">
+            <h4 class="font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
+              <i class="ph ph-tree-structure text-amber-400"></i> Codebase AST Symbol Map
+            </h4>
+            <pre id="codebaseRepoMap" class="font-mono text-[11px] text-slate-300 whitespace-pre-wrap flex-1 max-h-96 overflow-y-auto bg-slate-900/60 p-3 rounded-lg border border-slate-800"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-3.5 border-t border-slate-800 flex justify-end">
+        <button onclick="closeCodebaseModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BROWSER SMOKE TEST MODAL -->
+  <div id="smokeTestModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <i class="ph ph-browser text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Live Browser Smoke Test (Playwright Chromium)</h3>
+            <p class="text-xs text-slate-400">Autonomous headless browser UI and console inspection</p>
+          </div>
+        </div>
+        <button onclick="closeSmokeTestModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white">
+          <i class="ph ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 text-xs">
+        <div class="flex items-center justify-between bg-slate-950/70 border border-slate-800 p-3 rounded-xl">
+          <div class="space-y-0.5">
+            <span class="text-slate-400 text-[11px]">Test Target URL:</span>
+            <div id="smokeUrl" class="font-mono text-white font-semibold">http://127.0.0.1:8000</div>
+          </div>
+          <div id="smokeStatusBadge" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Initialising...
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-950/70 border border-slate-800 p-3 rounded-xl">
+            <span class="text-slate-400 text-[11px]">Page Title Verified:</span>
+            <div id="smokeTitle" class="font-medium text-slate-200 mt-0.5">-</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 p-3 rounded-xl">
+            <span class="text-slate-400 text-[11px]">Console Errors:</span>
+            <div id="smokeErrors" class="font-mono text-slate-300 mt-0.5 whitespace-pre-wrap max-h-24 overflow-y-auto">-</div>
+          </div>
+        </div>
+
+        <div id="smokeScreenshotContainer" class="hidden space-y-2">
+          <span class="text-slate-400 text-[11px] font-semibold flex items-center gap-1.5">
+            <i class="ph ph-camera text-sky-400"></i> Verification Screenshot Captured by Chromium:
+          </span>
+          <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-950 shadow-inner max-h-72 overflow-y-auto">
+            <img id="smokeScreenshot" src="" alt="Live Smoke Test Screenshot" class="w-full object-cover rounded-lg" />
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-3.5 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="runBrowserSmokeTestUI()" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-medium text-xs flex items-center gap-1.5">
+          <i class="ph ph-arrows-clockwise"></i> Re-test
+        </button>
+        <button onclick="closeSmokeTestModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs">Close</button>
+      </div>
+    </div>
+  </div>
+  <!-- AGENT TELEMETRY LIVE DRAWER -->
+  <div id="telemetryDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[500px] bg-[#0d131f] border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <!-- Drawer Header -->
+    <div class="h-16 px-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">
+          <i class="ph ph-cpu"></i>
+        </div>
+        <div>
+          <h3 id="telemetryRoleName" class="font-bold text-white text-sm">Developer</h3>
+          <p class="text-xs text-slate-400">Live Agent Activity & Telemetry Inspector</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="telemetryStatusBadge" class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">IDLE</span>
+        <button onclick="closeTelemetryDrawer()" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white">
+          <i class="ph ph-x text-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Drawer Body -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+      <!-- Active Task Info -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-1">
+        <span class="text-slate-400 text-[11px] font-semibold uppercase tracking-wider">Current / Last Task</span>
+        <div id="telemetryCurrentTask" class="text-white font-medium text-xs">Loading task information...</div>
+      </div>
+
+      <!-- Agent Resource Meter -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between">
+        <div>
+          <div class="text-slate-400 text-[10px] font-semibold uppercase tracking-wider">Agent Token Consumption</div>
+          <div class="text-white font-mono font-bold text-xs mt-0.5" id="telemetryAgentTokens">0 tokens</div>
+        </div>
+        <div class="text-right">
+          <div class="text-slate-400 text-[10px] font-semibold uppercase tracking-wider">Cost</div>
+          <div class="text-emerald-400 font-mono font-bold text-xs mt-0.5" id="telemetryAgentCost">$0.0000</div>
+        </div>
+      </div>
+
+      <!-- Live Execution Traces -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5">
+            <i class="ph ph-activity text-sky-400"></i> Recent Execution Traces & Thoughts
+          </span>
+          <span class="text-[10px] text-slate-500 font-mono">SQLite WAL</span>
+        </div>
+        <div id="telemetryTracesList" class="space-y-2.5 max-h-[50vh] overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- Drawer Footer Actions -->
+    <div class="p-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between gap-3">
+      <button onclick="chatFromTelemetry()" class="flex-1 px-4 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-medium text-xs flex items-center justify-center gap-1.5 transition-all">
+        <i class="ph ph-chat-teardrop-dots"></i> Open Chat with Agent
+      </button>
+      <button onclick="closeTelemetryDrawer()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs">
+        Close
+      </button>
+    </div>
+  </div>
 </body>
 </html>

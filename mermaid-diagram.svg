@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 781.7359999999999 868.0999999999999" width="781.7359999999999" height="868.0999999999999" style="--bg:#1F1F1F;--fg:#CCCCCC;--line:#CCCCCC;--accent:#0078D4;--muted:#CCCCCCCC;--surface:#181818;--border:#CCCCCC;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="Swarm" data-label="Your 8-Agent CrewAI Swarm">
+  <rect x="212.73250000000002" y="215.8" width="367.8124999999999" height="436.5" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="212.73250000000002" y="215.8" width="367.8124999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="224.73250000000002" y="229.8" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Your 8-Agent CrewAI Swarm</text>
+</g>
+<polyline class="edge" data-from="User" data-to="Me" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="377.53000000000003,76.9 377.53,124.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<polyline class="edge" data-from="Monitor" data-to="Intervene" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="195.09600000000003,743.2 195.096,791.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Me" data-to="Trigger" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="377.53,161.8 377.53,259.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Verify" data-to="Monitor" data-style="dotted" data-arrow-start="false" data-arrow-end="true" points="327.93083333333334,551.4000000000001 327.93083333333334,563.4000000000001 311.52500000000003,563.4000000000001 311.52500000000003,694.3 195.09600000000003,694.3 195.09600000000003,706.3" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Git" data-to="Deliver" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="443.53499999999997,636.3 443.53499999999997,694.3 559.9639999999999,694.3 559.9639999999999,706.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Trigger" data-to="Coord" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="377.53,296.70000000000005 377.53,344.70000000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Coord" data-to="DevTeam" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="377.53,381.6 377.53,429.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DevTeam" data-to="Verify" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="377.53,466.5 377.53,514.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Verify" data-to="Git" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="427.12916666666666,551.4000000000001 427.12916666666666,563.4000000000001 443.53499999999997,563.4000000000001 443.53499999999997,599.4000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="node" data-id="User" data-label="You (High-Level Requirements)" data-shape="rectangle">
+  <rect x="265.7825" y="40" width="223.49499999999998" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="377.53000000000003" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">You (High-Level Requirements)</text>
+</g>
+<g class="node" data-id="Me" data-label="Antigravity (Executive Meta-Orchestrator)" data-shape="rectangle">
+  <rect x="234.29000000000002" y="124.9" width="286.47999999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="377.53" y="143.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Antigravity (Executive Meta-Orchestrator)</text>
+</g>
+<g class="node" data-id="Monitor" data-label="Antigravity Monitors DB &amp; Traces in Real-Time" data-shape="rectangle">
+  <rect x="40" y="706.3" width="310.19200000000006" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="195.09600000000003" y="724.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Antigravity Monitors DB &amp; Traces in Real-Time</text>
+</g>
+<g class="node" data-id="Intervene" data-label="Auto-Heal / Re-route if an Agent is Stuck" data-shape="rectangle">
+  <rect x="60.74800000000006" y="791.2" width="268.6959999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="195.096" y="809.6500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Auto-Heal / Re-route if an Agent is Stuck</text>
+</g>
+<g class="node" data-id="Deliver" data-label="Antigravity Delivers Verified Production Release to You" data-shape="rectangle">
+  <rect x="378.192" y="706.3" width="363.5439999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="559.9639999999999" y="724.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Antigravity Delivers Verified Production Release to You</text>
+</g>
+<g class="node" data-id="Trigger" data-label="Spin Up / Decompose Tasks via API / CLI" data-shape="rectangle">
+  <rect x="238.73600000000002" y="259.8" width="277.58799999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="377.53" y="278.25" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Spin Up / Decompose Tasks via API / CLI</text>
+</g>
+<g class="node" data-id="Coord" data-label="Coordinator &amp; Architect" data-shape="rectangle">
+  <rect x="288.38300000000004" y="344.70000000000005" width="178.29399999999998" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="377.53000000000003" y="363.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Coordinator &amp; Architect</text>
+</g>
+<g class="node" data-id="DevTeam" data-label="Developer (with Sub-Agents) &amp; Tester" data-shape="rectangle">
+  <rect x="247.9985" y="429.6" width="259.063" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="377.53" y="448.05" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Developer (with Sub-Agents) &amp; Tester</text>
+</g>
+<g class="node" data-id="Verify" data-label="Subprocess Tests &amp; Playwright Smoke Test" data-shape="rectangle">
+  <rect x="228.73250000000002" y="514.5" width="297.59499999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="377.53" y="532.95" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Subprocess Tests &amp; Playwright Smoke Test</text>
+</g>
+<g class="node" data-id="Git" data-label="Git Branch &amp; Conventional Commits" data-shape="rectangle">
+  <rect x="322.52500000000003" y="599.4000000000001" width="242.0199999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="443.53499999999997" y="617.8500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Git Branch &amp; Conventional Commits</text>
+</g>
+</svg>

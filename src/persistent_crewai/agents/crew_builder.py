@@ -404,7 +404,7 @@ def build_agent(
     role_def = get_role_definition(role)
     canonical = role_def.canonical_role
 
-    resolved_llm = llm if llm is not None else get_llm()
+    resolved_llm = llm if llm is not None else get_llm(role=canonical)
 
     if tools is None:
         try:

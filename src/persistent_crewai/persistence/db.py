@@ -172,6 +172,26 @@ CREATE TRIGGER IF NOT EXISTS trg_memory_update AFTER UPDATE ON memory_records BE
     DELETE FROM memory_fts WHERE record_id = old.record_id;
     INSERT INTO memory_fts(record_id, content) VALUES (new.record_id, new.content);
 END;
+
+-- 9. Token Ledger: Per-call token metrics and cost accounting
+CREATE TABLE IF NOT EXISTS token_ledger (
+    ledger_id VARCHAR(64) PRIMARY KEY,
+    project_id VARCHAR(64) NOT NULL,
+    run_id VARCHAR(64),
+    task_id VARCHAR(64),
+    agent_role VARCHAR(64) NOT NULL,
+    provider VARCHAR(32) NOT NULL,
+    model_name VARCHAR(128) NOT NULL,
+    prompt_tokens INTEGER NOT NULL DEFAULT 0,
+    completion_tokens INTEGER NOT NULL DEFAULT 0,
+    total_tokens INTEGER NOT NULL DEFAULT 0,
+    estimated_cost_usd REAL NOT NULL DEFAULT 0.0,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    metadata_json TEXT DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_ledger_project ON token_ledger(project_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_ledger_agent ON token_ledger(agent_role);
+CREATE INDEX IF NOT EXISTS idx_ledger_provider ON token_ledger(provider);
 """
 
 

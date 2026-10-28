@@ -1,27 +1,56 @@
-# Environments & Secrets
+# ==============================================================================
+# Environments & Secrets (NEVER commit personal API keys)
+# ==============================================================================
 .env
 *.env
 .env.*
+!.env.example
 
-# Python
+# ==============================================================================
+# Python & Virtual Environments
+# ==============================================================================
 __pycache__/
 *.py[cod]
-*.class
+*$py.class
 *.egg-info/
 dist/
 build/
 .venv/
 env/
 venv/
+.pytest_cache/
 
-# Databases & local state
+# ==============================================================================
+# Databases & Local WAL State
+# ==============================================================================
 *.db
 *.db-wal
 *.db-shm
+custom.db
+state.db
 .persistent_crewai/
 mock_github.json
 
-# IDE / OS
+# ==============================================================================
+# Runtime Projects & Plans (Preserves directory structure via .gitkeep)
+# ==============================================================================
+projects/*
+!projects/.gitkeep
+plans/*
+!plans/.gitkeep
+
+# ==============================================================================
+# Test Logs & Browser Verification Reports
+# ==============================================================================
+*.log
+output.json*
+*operator_export.json
+test-results/
+playwright-report/
+
+# ==============================================================================
+# IDEs & Operating System Artifacts
+# ==============================================================================
 .vscode/
 .idea/
 .DS_Store

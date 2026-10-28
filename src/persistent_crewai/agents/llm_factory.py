@@ -335,12 +335,162 @@ class DeterministicMockLLM(BaseChatModel):
 
 
 # =============================================================================
+# Multi-Provider Wrapper Implementations
+# =============================================================================
+class OpenAICompatibleWrapper(BaseChatModel):
+    """Wrapper for OpenAI-compatible APIs (OpenRouter, Groq, NVIDIA NIM, Local) with live token metering."""
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+    model_name: str = "qwen/qwen-2.5-coder-32b-instruct"
+    temperature: float = 0.7
+    client: Any = None
+    role: str = "Developer"
+    project_id: str = "default_project"
+
+    def __init__(self, api_key: str, base_url: str, model_name: str, temperature: float = 0.7, role: str = "Developer", project_id: str = "default_project", **data: Any):
+        super().__init__(**data)
+        from openai import OpenAI
+        self.model_name = model_name
+        self.temperature = temperature
+        self.role = role
+        self.project_id = project_id
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+
+    def predict(self, text: str, **kwargs: Any) -> str:
+        try:
+            resp = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": text}],
+                temperature=self.temperature,
+                max_tokens=kwargs.get("max_tokens", 4096),
+            )
+            # Live Token Metering Interceptor
+            usage = getattr(resp, "usage", None)
+            if usage:
+                p_tokens = getattr(usage, "prompt_tokens", 0)
+                c_tokens = getattr(usage, "completion_tokens", 0)
+                t_tokens = getattr(usage, "total_tokens", p_tokens + c_tokens)
+                try:
+                    from persistent_crewai.persistence.state_manager import StateManager
+                    sm = StateManager(project_id=self.project_id)
+                    provider_name = "openrouter" if "openrouter" in str(getattr(self.client, "base_url", "")) else "groq" if "groq" in str(getattr(self.client, "base_url", "")) else "openai"
+                    sm.record_token_usage(
+                        project_id=self.project_id,
+                        agent_role=self.role,
+                        provider=provider_name,
+                        model_name=self.model_name,
+                        prompt_tokens=p_tokens,
+                        completion_tokens=c_tokens,
+                        total_tokens=t_tokens,
+                    )
+                except Exception as log_err:
+                    logger.debug("Failed to record token usage: %s", log_err)
+
+            return resp.choices[0].message.content or ""
+        except Exception as e:
+            logger.warning("OpenAI-compatible request failed (%s): %s. Attempting failover to Gemini.", self.model_name, e)
+            gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+            if gemini_key:
+                try:
+                    from google import genai
+                    g_client = genai.Client(api_key=gemini_key)
+                    g_resp = g_client.models.generate_content(model="gemini-3.5-flash-lite", contents=text)
+                    g_meta = getattr(g_resp, "usage_metadata", None)
+                    if g_meta:
+                        p_tokens = getattr(g_meta, "prompt_token_count", 0)
+                        c_tokens = getattr(g_meta, "candidates_token_count", 0)
+                        t_tokens = getattr(g_meta, "total_token_count", p_tokens + c_tokens)
+                        try:
+                            from persistent_crewai.persistence.state_manager import StateManager
+                            sm = StateManager(project_id=self.project_id)
+                            sm.record_token_usage(
+                                project_id=self.project_id,
+                                agent_role=self.role,
+                                provider="gemini",
+                                model_name="gemini-3.5-flash-lite",
+                                prompt_tokens=p_tokens,
+                                completion_tokens=c_tokens,
+                                total_tokens=t_tokens,
+                            )
+                        except Exception:
+                            pass
+                    return g_resp.text or ""
+                except Exception as g_err:
+                    logger.error("Gemini failover also failed: %s", g_err)
+            # Resilient fallback to deterministic mock so offline/credit-exhausted runs never crash
+            mock_llm = DeterministicMockLLM(role=self.role)
+            return mock_llm.predict(text)
+
+    def invoke(self, input: Any, **kwargs: Any) -> AIMessage:
+        text = input.content if hasattr(input, "content") else str(input)
+        return AIMessage(content=self.predict(text))
+
+    def __call__(self, input: Any, **kwargs: Any) -> Any:
+        return self.invoke(input)
+
+
+class GoogleGenAIWrapper(BaseChatModel):
+    """Wrapper for Google GenAI Client SDK with live token metering."""
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+    model_name: str = "gemini-3.5-flash-lite"
+    temperature: float = 0.7
+    client: Any = None
+    role: str = "Coordinator"
+    project_id: str = "default_project"
+
+    def __init__(self, api_key: str, model_name: str = "gemini-3.5-flash-lite", temperature: float = 0.7, role: str = "Coordinator", project_id: str = "default_project", **data: Any):
+        super().__init__(**data)
+        from google import genai
+        self.model_name = model_name
+        self.temperature = temperature
+        self.role = role
+        self.project_id = project_id
+        self.client = genai.Client(api_key=api_key)
+
+    def predict(self, text: str, **kwargs: Any) -> str:
+        try:
+            resp = self.client.models.generate_content(model=self.model_name, contents=text)
+            meta = getattr(resp, "usage_metadata", None)
+            if meta:
+                p_tokens = getattr(meta, "prompt_token_count", 0)
+                c_tokens = getattr(meta, "candidates_token_count", 0)
+                t_tokens = getattr(meta, "total_token_count", p_tokens + c_tokens)
+                try:
+                    from persistent_crewai.persistence.state_manager import StateManager
+                    sm = StateManager(project_id=self.project_id)
+                    sm.record_token_usage(
+                        project_id=self.project_id,
+                        agent_role=self.role,
+                        provider="gemini",
+                        model_name=self.model_name,
+                        prompt_tokens=p_tokens,
+                        completion_tokens=c_tokens,
+                        total_tokens=t_tokens,
+                    )
+                except Exception as log_err:
+                    logger.debug("Failed to record Gemini token usage: %s", log_err)
+            return resp.text or ""
+        except Exception as e:
+            logger.warning("GoogleGenAI request failed (%s): %s. Falling back to deterministic mock.", self.model_name, e)
+            mock_llm = DeterministicMockLLM(role=self.role)
+            return mock_llm.predict(text)
+
+    def invoke(self, input: Any, **kwargs: Any) -> AIMessage:
+        text = input.content if hasattr(input, "content") else str(input)
+        return AIMessage(content=self.predict(text))
+
+    def __call__(self, input: Any, **kwargs: Any) -> Any:
+        return self.invoke(input)
+
+
+# =============================================================================
 # LLM Provider Factory
 # =============================================================================
 def get_llm(
     provider: Optional[str] = None,
     model_name: Optional[str] = None,
     temperature: float = 0.7,
+    role: Optional[str] = None,
+    project_id: Optional[str] = None,
     **kwargs: Any,
 ) -> Any:
     """
@@ -418,31 +568,86 @@ def get_llm(
                 f"Unsupported LLM provider '{provider}'. Valid providers: 'mock', 'deterministic', 'openai', 'gemini', 'anthropic', 'ollama'"
             )
 
-    # 3. Automatic Environment Detection (provider is None)
+    # 3. Role-Based Dual-Tier Routing across available API keys
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    groq_key = os.environ.get("GROQ_API_KEY")
+    nvidia_key = os.environ.get("NVIDIA_API_KEY")
     openai_key = os.environ.get("OPENAI_API_KEY")
+
+    canonical_role = str(role).capitalize() if role else ""
+    is_reasoning_role = canonical_role in ("Developer", "Architect", "Reviewer", "Tester")
+
+    # Tier A: Deep Reasoning & Code Synthesis (Developer, Architect, Reviewer, Tester)
+    eff_pid = project_id or "default_project"
+    if is_reasoning_role:
+        if openrouter_key:
+            try:
+                chosen = model_name or "qwen/qwen-2.5-coder-32b-instruct"
+                logger.info("Routing %s to OpenRouter (%s)", canonical_role, chosen)
+                return OpenAICompatibleWrapper(
+                    api_key=openrouter_key,
+                    base_url="https://openrouter.ai/api/v1",
+                    model_name=chosen,
+                    temperature=temperature,
+                    role=canonical_role,
+                    project_id=eff_pid,
+                )
+            except Exception as e:
+                logger.warning("Failed OpenRouter initialization for %s: %s", canonical_role, e)
+
+        if gemini_key:
+            try:
+                chosen = model_name or "gemini-3.5-flash-lite"
+                logger.info("Routing %s to Gemini (%s)", canonical_role, chosen)
+                return GoogleGenAIWrapper(api_key=gemini_key, model_name=chosen, temperature=temperature, role=canonical_role, project_id=eff_pid)
+            except Exception as e:
+                logger.warning("Failed Gemini initialization for %s: %s", canonical_role, e)
+
+    # Tier B: Fast Orchestration & Coordination (Coordinator, Memory, GitHub, Designer, or default)
+    if gemini_key:
+        try:
+            chosen = model_name or "gemini-3.5-flash-lite"
+            logger.info("Routing %s to Gemini (%s)", canonical_role or "default", chosen)
+            return GoogleGenAIWrapper(api_key=gemini_key, model_name=chosen, temperature=temperature, role=canonical_role or "Coordinator", project_id=eff_pid)
+        except Exception as e:
+            logger.warning("Failed Gemini wrapper: %s", e)
+
+    if openrouter_key:
+        try:
+            chosen = model_name or "openai/gpt-4o-mini"
+            logger.info("Routing %s to OpenRouter (%s)", canonical_role or "default", chosen)
+            return OpenAICompatibleWrapper(
+                api_key=openrouter_key,
+                base_url="https://openrouter.ai/api/v1",
+                model_name=chosen,
+                temperature=temperature,
+                role=canonical_role or "Developer",
+                project_id=eff_pid,
+            )
+        except Exception as e:
+            logger.warning("Failed OpenRouter wrapper: %s", e)
+
+    if groq_key:
+        try:
+            chosen = model_name or "openai/gpt-oss-120b"
+            logger.info("Routing %s to Groq (%s)", canonical_role or "default", chosen)
+            return OpenAICompatibleWrapper(
+                api_key=groq_key,
+                base_url="https://api.groq.com/openai/v1",
+                model_name=chosen,
+                temperature=temperature,
+                role=canonical_role or "Coordinator",
+                project_id=eff_pid,
+            )
+        except Exception as e:
+            logger.warning("Failed Groq wrapper: %s", e)
+
     if openai_key:
         try:
             from langchain_openai import ChatOpenAI
             logger.info("Auto-detected OPENAI_API_KEY; initializing ChatOpenAI.")
             return ChatOpenAI(model=model_name or "gpt-4o-mini", temperature=temperature, api_key=openai_key, **kwargs)
-        except ImportError:
-            pass
-
-    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if gemini_key:
-        try:
-            from langchain_google_genai import ChatGoogleGenerativeAI
-            logger.info("Auto-detected GEMINI_API_KEY; initializing ChatGoogleGenerativeAI.")
-            return ChatGoogleGenerativeAI(model=model_name or "gemini-1.5-flash", temperature=temperature, google_api_key=gemini_key, **kwargs)
-        except ImportError:
-            pass
-
-    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
-    if anthropic_key:
-        try:
-            from langchain_anthropic import ChatAnthropic
-            logger.info("Auto-detected ANTHROPIC_API_KEY; initializing ChatAnthropic.")
-            return ChatAnthropic(model=model_name or "claude-3-5-sonnet-latest", temperature=temperature, api_key=anthropic_key, **kwargs)
         except ImportError:
             pass
 
@@ -459,9 +664,10 @@ class LLMFactory:
         provider: Optional[str] = None,
         model_name: Optional[str] = None,
         temperature: float = 0.7,
+        role: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
-        return get_llm(provider=provider, model_name=model_name, temperature=temperature, **kwargs)
+        return get_llm(provider=provider, model_name=model_name, temperature=temperature, role=role, **kwargs)
 
 
 __all__ = [

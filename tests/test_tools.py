@@ -613,14 +613,17 @@ class TestRoleToolAssignments(unittest.TestCase):
         self.assertIn("write_workspace_file", tool_names)
         self.assertIn("patch_workspace_file", tool_names)
         self.assertIn("list_workspace_files", tool_names)
-        self.assertEqual(len(tools), 4)
+        self.assertIn("spawn_subagent_assistant", tool_names)
+        self.assertEqual(len(tools), 5)
 
     def test_tester_tools(self):
         tools = get_agent_tools("Tester", workspace_root=self.workspace_root)
         tool_names = [t.name for t in tools]
         self.assertIn("read_workspace_file", tool_names)
         self.assertIn("list_workspace_files", tool_names)
-        self.assertEqual(len(tools), 2)
+        self.assertIn("run_tests", tool_names)
+        self.assertIn("browser_smoke_test", tool_names)
+        self.assertEqual(len(tools), 4)
 
     def test_github_manager_tools(self):
         tools = get_agent_tools("GitHub Manager", workspace_root=self.workspace_root)
@@ -630,7 +633,8 @@ class TestRoleToolAssignments(unittest.TestCase):
         self.assertIn("github_branch_tool", tool_names)
         self.assertIn("github_commit_tool", tool_names)
         self.assertIn("github_repo_status_tool", tool_names)
-        self.assertEqual(len(tools), 5)
+        self.assertIn("local_git_tool", tool_names)
+        self.assertEqual(len(tools), 6)
 
     def test_memory_manager_tools(self):
         tools = get_agent_tools("Memory & Status Manager", workspace_root=self.workspace_root)
@@ -645,9 +649,10 @@ class TestRoleToolAssignments(unittest.TestCase):
         tool_names = [t.name for t in tools]
         self.assertIn("read_workspace_file", tool_names)
         self.assertIn("list_workspace_files", tool_names)
+        self.assertIn("write_workspace_file", tool_names)
         self.assertIn("record_decision", tool_names)
         self.assertIn("query_memory", tool_names)
-        self.assertEqual(len(tools), 4)
+        self.assertEqual(len(tools), 5)
 
     def test_designer_tools(self):
         tools = get_agent_tools("Designer", workspace_root=self.workspace_root)
@@ -663,7 +668,8 @@ class TestRoleToolAssignments(unittest.TestCase):
         self.assertIn("read_workspace_file", tool_names)
         self.assertIn("list_workspace_files", tool_names)
         self.assertIn("query_memory", tool_names)
-        self.assertEqual(len(tools), 3)
+        self.assertIn("browser_smoke_test", tool_names)
+        self.assertEqual(len(tools), 4)
 
     def test_coordinator_tools(self):
         tools = get_agent_tools("Coordinator", workspace_root=self.workspace_root)

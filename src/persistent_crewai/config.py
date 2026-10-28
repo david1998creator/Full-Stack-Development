@@ -81,6 +81,10 @@ def get_workspace_root() -> Path:
     env_root = os.environ.get("CREWAI_WORKSPACE_ROOT")
     if env_root:
         return Path(env_root).resolve()
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / ".persistent_crewai").exists() or parent.name == "persistent_crewai_team":
+            return parent
     return Path.cwd().resolve()
 
 
@@ -100,3 +104,37 @@ def get_default_mock_github_path(workspace_root: Optional[Path | str] = None) ->
         return Path(env_gh).resolve()
     root = Path(workspace_root).resolve() if workspace_root else get_workspace_root()
     return root / DEFAULT_PERSISTENCE_DIR_NAME / DEFAULT_MOCK_GITHUB_NAME
+
+
+# Model Pricing Rate Cards per 1,000 tokens (input_cost, output_cost) in USD
+MODEL_PRICING: dict[str, tuple[float, float]] = {
+    # OpenRouter models
+    "qwen/qwen-2.5-coder-32b-instruct": (0.0002, 0.0002),
+    "anthropic/claude-3.5-sonnet": (0.003, 0.015),
+    "deepseek/deepseek-r1": (0.00055, 0.00219),
+    "openai/gpt-4o-mini": (0.00015, 0.0006),
+    # Google Gemini models
+    "gemini-3.5-flash-lite": (0.000075, 0.0003),
+    "gemini-2.5-flash": (0.000075, 0.0003),
+    "gemini-1.5-flash": (0.000075, 0.0003),
+    "gemini-2.5-pro": (0.00125, 0.005),
+    # Groq models
+    "llama-3.3-70b-versatile": (0.0, 0.0),
+    "default": (0.0002, 0.0004),
+}
+
+
+def calculate_token_cost(model_name: str, prompt_tokens: int, completion_tokens: int) -> float:
+    """Calculate estimated USD cost based on token counts and model pricing."""
+    pricing = MODEL_PRICING.get(model_name.lower())
+    if not pricing:
+        for k, v in MODEL_PRICING.items():
+            if k in model_name.lower() or model_name.lower() in k:
+                pricing = v
+                break
+    if not pricing:
+        pricing = MODEL_PRICING["default"]
+
+    in_cost = (prompt_tokens / 1000.0) * pricing[0]
+    out_cost = (completion_tokens / 1000.0) * pricing[1]
+    return round(in_cost + out_cost, 6)

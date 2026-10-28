@@ -35,6 +35,10 @@ from persistent_crewai.tools.workspace_tools import (
     WorkspaceFileWriteTool,
     validate_safe_path,
 )
+from persistent_crewai.tools.test_runner_tools import RunTestsTool, SubprocessTestRunner
+from persistent_crewai.tools.browser_smoke_tool import BrowserSmokeTestTool, PlaywrightSmokeTester
+from persistent_crewai.tools.git_tool import RealGitTool, RealGitRepoManager
+from persistent_crewai.tools.subagent_tool import SpawnAssistantTool
 
 # Tool aliases
 WorkspaceReadTool = WorkspaceFileReadTool
@@ -478,20 +482,26 @@ def get_agent_tools(
     milestone_tool = RecordMilestoneTool(state_manager=state_manager)
     memory_tool = QueryMemoryTool(state_manager=state_manager)
 
+    # Instantiate verification & real git tools
+    test_tool = RunTestsTool(project_root=workspace_root)
+    browser_tool = BrowserSmokeTestTool(project_root=workspace_root)
+    git_tool = RealGitTool(repo_dir=workspace_root)
+    subagent_tool = SpawnAssistantTool(workspace_root=workspace_root, state_manager=state_manager, parent_role=canonical_role)
+
     if canonical_role == "Developer":
-        return [reader, writer, patcher, lister]
+        return [reader, writer, patcher, lister, subagent_tool]
     elif canonical_role == "Tester":
-        return [reader, lister]
+        return [reader, lister, test_tool, browser_tool]
     elif canonical_role == "Reviewer":
-        return [reader, lister, memory_tool]
+        return [reader, lister, memory_tool, browser_tool]
     elif canonical_role == "Designer":
         return [reader, writer, lister]
     elif canonical_role == "GitHub Manager":
-        return [issue_tool, pr_tool, branch_tool, commit_tool, status_tool]
+        return [git_tool, issue_tool, pr_tool, branch_tool, commit_tool, status_tool]
     elif canonical_role == "Memory & Status Manager":
         return [decision_tool, milestone_tool, memory_tool]
     elif canonical_role == "Architect":
-        return [reader, lister, decision_tool, memory_tool]
+        return [reader, lister, writer, decision_tool, memory_tool]
     elif canonical_role == "Coordinator":
         return [lister, memory_tool, milestone_tool]
     else:
@@ -548,6 +558,14 @@ __all__ = [
     "RecordDecisionTool",
     "RecordMilestoneTool",
     "QueryMemoryTool",
+    # Verification & Git Tools
+    "RunTestsTool",
+    "SubprocessTestRunner",
+    "BrowserSmokeTestTool",
+    "PlaywrightSmokeTester",
+    "RealGitTool",
+    "RealGitRepoManager",
+    "SpawnAssistantTool",
     # Role Tool Assignment
     "get_agent_tools",
 ]

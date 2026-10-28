@@ -9,16 +9,73 @@
 
 ---
 
+## 🚀 Quickstart for Collaborators (Run with Your Own Keys)
+
+Get up and running in under 2 minutes:
+
+### 1. Clone & Set Up Environment
+```bash
+git clone <repo-url>
+cd persistent_crewai_team
+
+# Create and activate virtual environment
+python -m venv .venv
+
+# Windows:
+.venv\Scripts\activate
+# macOS / Linux:
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Configure Your API Keys
+Copy the provided environment template:
+```bash
+# Windows:
+copy .env.example .env
+# macOS / Linux:
+cp .env.example .env
+```
+Open `.env` in any editor and paste your API key(s):
+- **Google Gemini** (Recommended for fast routing & planning): Get a key at [Google AI Studio](https://aistudio.google.com/app/api-keys).
+- **OpenRouter** (Recommended for deep code reasoning): Get a key at [OpenRouter](https://openrouter.ai/keys).
+- *(Optional)* **Groq** / **NVIDIA NIM** for ultra-fast failovers.
+
+> 💡 **Deterministic Offline Mode**: If no API keys are provided, the entire framework operates in 100% deterministic offline mock mode with built-in verification tests.
+
+### 3. Launch the Web Control Console
+```bash
+# Windows:
+start_control_centre.bat
+
+# macOS / Linux:
+chmod +x start_control_centre.sh
+./start_control_centre.sh
+
+# Or directly:
+python ui/server.py
+```
+Open **`http://127.0.0.1:8000`** in your browser to access:
+- **Project Flow (Kanban)**: Live board for assigning tasks, inspecting outputs, and executing agent tasks.
+- **Live Agent Workspace**: Interactive visual pipeline showing real-time agent handoffs and subagent branches.
+- **Live Token & Cost Meter**: Real-time per-key token counters and exact USD accounting.
+- **Project Filter Dropdown**: Seamlessly switch between projects with direct `[🌐 Open App]` launcher buttons.
+
+---
+
 ## Table of Contents
-1. [System Overview & Problem Statement](#1-system-overview--problem-statement)
-2. [Complete ASCII Architecture Diagram](#2-complete-ascii-architecture-diagram)
-3. [8 Specialist Canonical Roles Matrix](#3-8-specialist-canonical-roles-matrix)
-4. [Persistence & Session Resumption](#4-persistence--session-resumption)
-5. [Sandboxed Security & Path Traversal Containment](#5-sandboxed-security--path-traversal-containment)
-6. [Bi-Modal GitHub Adapters](#6-bi-modal-github-adapters)
-7. [CLI & Interactive REPL User Guide](#7-cli--interactive-repl-user-guide)
-8. [100% Offline Quickstart & Test Instructions](#8-100-offline-quickstart--test-instructions)
-9. [Verification & Test Coverage Summary](#9-verification--test-coverage-summary)
+1. [Quickstart for Collaborators](#-quickstart-for-collaborators-run-with-your-own-keys)
+2. [System Overview & Problem Statement](#1-system-overview--problem-statement)
+3. [Complete ASCII Architecture Diagram](#2-complete-ascii-architecture-diagram)
+4. [8 Specialist Canonical Roles Matrix](#3-8-specialist-canonical-roles-matrix)
+5. [Persistence & Session Resumption](#4-persistence--session-resumption)
+6. [Sandboxed Security & Path Traversal Containment](#5-sandboxed-security--path-traversal-containment)
+7. [Bi-Modal GitHub Adapters](#6-bi-modal-github-adapters)
+8. [CLI & Interactive REPL User Guide](#7-cli--interactive-repl-user-guide)
+9. [100% Offline Quickstart & Test Instructions](#8-100-offline-quickstart--test-instructions)
+10. [Verification & Test Coverage Summary](#9-verification--test-coverage-summary)
 
 ---
 
