@@ -1,5 +1,5 @@
 # ==============================================================================
-# Persistent CrewAI 8-Agent Software Engineering Framework Dependencies
+# Persistent CrewAI 10-Role Multi-Agent SDLC Framework Dependencies
 # ==============================================================================
 
 # Core Multi-Agent Framework

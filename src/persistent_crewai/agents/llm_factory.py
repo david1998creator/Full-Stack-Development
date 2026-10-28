@@ -10,8 +10,19 @@ import hashlib
 import logging
 import os
 import re
+import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 from pydantic import BaseModel, ConfigDict, Field
+
+# Auto-load .env from workspace root if present
+try:
+    from dotenv import load_dotenv
+    _env_candidate = Path(__file__).resolve().parent.parent.parent.parent / ".env"
+    if _env_candidate.exists():
+        load_dotenv(_env_candidate)
+except Exception:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -673,9 +684,29 @@ def get_llm(
         except ImportError:
             pass
 
-    # 4. Default Offline Fallback
-    logger.info("No LLM API keys detected; falling back to DeterministicMockLLM.")
-    return DeterministicMockLLM(model_name=model_name or "deterministic-mock-llm", temperature=0.0, **kwargs)
+    # 4. Default Offline Fallback (strictly isolated for automated tests or explicit mock flags)
+    is_test_env = (
+        bool(os.environ.get("PYTEST_CURRENT_TEST"))
+        or bool(os.environ.get("PYTEST_VERSION"))
+        or ("unittest" in sys.modules and any("test" in arg.lower() for arg in sys.argv))
+        or os.environ.get("MOCK_LLM", "").lower() in ("true", "1", "yes")
+        or os.environ.get("CREWAI_MOCK_LLM", "").lower() in ("true", "1", "yes")
+    )
+    if is_test_env:
+        logger.info("Initializing DeterministicMockLLM (automated test / offline mock mode).")
+        return DeterministicMockLLM(model_name=model_name or "deterministic-mock-llm", temperature=0.0, **kwargs)
+
+    # In real runtime execution, fail fast with a clear, actionable prompt
+    raise RuntimeError(
+        "Missing LLM API Key: Real runtime execution requires an active API key.\n"
+        "Please configure at least one of the following in your .env file:\n"
+        "  - GEMINI_API_KEY (Google Gemini)\n"
+        "  - GROQ_API_KEY (Groq Llama 3)\n"
+        "  - OPENROUTER_API_KEY (OpenRouter)\n"
+        "  - OPENAI_API_KEY (OpenAI)\n"
+        "  - NVIDIA_API_KEY (NVIDIA NIM)\n\n"
+        "To run in offline test mode, pass '--mock' or set MOCK_LLM=1."
+    )
 
 
 class LLMFactory:

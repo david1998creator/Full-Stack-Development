@@ -1,8 +1,8 @@
-# Persistent CrewAI 8-Agent Software Engineering Framework
+# Persistent CrewAI 10-Role Autonomous SDLC Framework
 
 [![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Architecture: 8--Agent](https://img.shields.io/badge/architecture-8--agent%20canonical-purple.svg)](#3-8-specialist-canonical-roles-matrix)
+[![Architecture: 10--Role](https://img.shields.io/badge/architecture-10--role%20canonical-purple.svg)](#3-8-specialist-canonical-roles-matrix)
 [![Persistence: SQLite WAL](https://img.shields.io/badge/persistence-SQLite%20WAL%20%2B%20FTS5-orange.svg)](#4-persistence--session-resumption)
 [![Offline Capability](https://img.shields.io/badge/offline-100%25%20hermetic%20deterministic-brightgreen.svg)](#8-100-offline-quickstart--test-instructions)
 [![Test Suite: 443 Passing](https://img.shields.io/badge/tests-443%20passed%20%28100%25%29-success.svg)](#9-verification--test-coverage-summary)
@@ -62,14 +62,51 @@ Open **`http://127.0.0.1:8000`** in your browser to access:
 - **Live Agent Workspace**: Interactive visual pipeline showing real-time agent handoffs and subagent branches.
 - **Live Token & Cost Meter**: Real-time per-key token counters and exact USD accounting.
 - **Project Filter Dropdown**: Seamlessly switch between projects with direct `[🌐 Open App]` launcher buttons.
+- **Milestones Roadmap**: Phased delivery tracking with automated SQLite-verified criteria checks.
+- **In-Browser Knowledge Graph**: Real-time Cytoscape.js interactive graph of architectural decisions and tables.
+
+---
+
+## 📸 Control Console & Live System Showcase
+
+Here is a visual walkthrough of the platform operating autonomously in real-time:
+
+### 1. Live Workspace Pipeline Visualizer & Dynamic Sub-Agents
+Real-time animated handoffs across canonical specialist roles with on-demand dynamic sub-agent spawning beneath the active developer.
+![Live Workspace Pipeline Visualizer](docs/live_workspace_pipeline_verified.png)
+
+### 2. Concept C: The HITL Decision Drawer & Token Budget Guard
+Pre-execution budget guard preventing token runaway with real-time token and USD cost estimation and non-blocking human-in-the-loop drawer.
+![HITL Decision Drawer & Budget Guard](docs/hitl_drawer_budget_guard_verified.png)
+
+### 3. Visual Milestones Roadmap & Automated Verification
+Track multi-phase architectural milestones with real-time criteria verification checkmarks tied directly to SQLite WAL state.
+![Visual Milestones Roadmap](docs/milestones_roadmap_verified.png)
+
+### 4. Embedded In-Browser Cytoscape.js Knowledge Graph
+Hardware-accelerated interactive graph visualization of architectural decisions, database models, and component dependencies—zero external software like Obsidian required.
+![Cytoscape.js Knowledge Graph](docs/knowledge_graph_verified.png)
+
+### 5. Live Token Metering & USD Cost Accounting
+Live per-agent and per-provider token telemetry and execution receipts displayed in real-time in the Control Console header.
+![Live Token Metering](docs/live_token_metering_verified.png)
+
+### 6. Multi-Project Workspace Isolation & Kanban Board
+Filter tasks, telemetry, and AST symbol extraction strictly by project with direct 1-click app launcher buttons.
+![Kanban Project Filter](docs/kanban_project_filtered.png)
+
+### 7. Automated Headless Browser Smoke Testing
+Autonomous Playwright smoke testing verifying 0 console errors and generating visual proof of delivery.
+![Headless Browser Smoke Test](docs/smoke_test_pass.png)
 
 ---
 
 ## Table of Contents
 1. [Quickstart for Collaborators](#-quickstart-for-collaborators-run-with-your-own-keys)
-2. [System Overview & Problem Statement](#1-system-overview--problem-statement)
-3. [Complete ASCII Architecture Diagram](#2-complete-ascii-architecture-diagram)
-4. [8 Specialist Canonical Roles Matrix](#3-8-specialist-canonical-roles-matrix)
+2. [Control Console & Live System Showcase](#-control-console--live-system-showcase)
+3. [System Overview & Problem Statement](#1-system-overview--problem-statement)
+4. [Complete ASCII Architecture Diagram](#2-complete-ascii-architecture-diagram)
+5. [10 Specialist Canonical Roles Matrix](#3-8-specialist-canonical-roles-matrix)
 5. [Persistence & Session Resumption](#4-persistence--session-resumption)
 6. [Sandboxed Security & Path Traversal Containment](#5-sandboxed-security--path-traversal-containment)
 7. [Bi-Modal GitHub Adapters](#6-bi-modal-github-adapters)

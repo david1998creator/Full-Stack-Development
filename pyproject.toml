@@ -30,6 +30,8 @@ dependencies = [
     "click>=8.0.0",
     "python-dotenv>=1.0.0",
     "requests>=2.31.0",
+    "openai>=1.0.0",
+    "google-genai>=0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -37,11 +39,10 @@ dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.12.0",
+    "playwright>=1.40.0",
 ]
 live = [
-    "openai>=1.0.0",
     "anthropic>=0.30.0",
-    "google-genai>=1.0.0",
 ]
 
 [project.scripts]

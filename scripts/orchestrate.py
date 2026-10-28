@@ -102,9 +102,14 @@ def orchestrate_project(goal: str, slug: str = "production_app") -> None:
 
 
 if __name__ == "__main__":
+    import os
     parser = argparse.ArgumentParser(description="Orchestrate project with Persistent CrewAI Team")
     parser.add_argument("--goal", type=str, required=True, help="Project requirements or prompt")
     parser.add_argument("--slug", type=str, default="production_app", help="Project folder slug")
+    parser.add_argument("--mock", action="store_true", help="Run in deterministic offline mock mode (testing/debug)")
     args = parser.parse_args()
+
+    if args.mock:
+        os.environ["MOCK_LLM"] = "1"
 
     orchestrate_project(goal=args.goal, slug=args.slug)

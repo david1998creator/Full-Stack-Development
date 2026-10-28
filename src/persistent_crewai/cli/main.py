@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 @click.option("--db-path", "-d", default=None, help="Path to SQLite state database")
 @click.option("--workspace-root", "-w", default=None, help="Path to workspace root directory")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose debug logging")
+@click.option("--mock", is_flag=True, default=False, help="Run in deterministic offline mock mode (testing/debug)")
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -35,8 +36,13 @@ def cli(
     db_path: Optional[str],
     workspace_root: Optional[str],
     verbose: bool,
+    mock: bool = False,
 ) -> None:
     """Persistent CrewAI: Multi-agent software engineering framework with state persistence."""
+    import os
+    if mock:
+        os.environ["MOCK_LLM"] = "1"
+
     target_level = logging.DEBUG if verbose else logging.INFO
     logging.getLogger("persistent_crewai").setLevel(target_level)
 
