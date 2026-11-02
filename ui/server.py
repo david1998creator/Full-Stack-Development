@@ -1207,5 +1207,48 @@ def create_custom_skill():
     except Exception as e:
         return jsonify({"status": "error", "success": False, "error": str(e)}), 500
 
+@app.route("/api/crew/prompt/update", methods=["POST"])
+def update_crew_prompt():
+    data = request.get_json(force=True, silent=True) or {}
+    role = data.get("agent_role")
+    custom_prompt = data.get("custom_prompt") or data.get("prompt")
+    pid = data.get("project_id") or "default_project"
+
+    if not role or not custom_prompt:
+        return jsonify({"status": "error", "success": False, "error": "agent_role and custom_prompt are required"}), 400
+
+    try:
+        res = state_mgr.set_agent_custom_prompt(agent_role=role, custom_prompt=custom_prompt, project_id=pid)
+        return jsonify({
+            "status": "ok",
+            "success": True,
+            "agent_role": role,
+            "custom_prompt": custom_prompt,
+            "result": res
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "success": False, "error": str(e)}), 500
+
+@app.route("/api/crew/prompt/reset", methods=["POST"])
+def reset_crew_prompt():
+    data = request.get_json(force=True, silent=True) or {}
+    role = data.get("agent_role")
+    pid = data.get("project_id") or "default_project"
+
+    if not role:
+        return jsonify({"status": "error", "success": False, "error": "agent_role is required"}), 400
+
+    try:
+        res = state_mgr.reset_agent_custom_prompt(agent_role=role, project_id=pid)
+        return jsonify({
+            "status": "ok",
+            "success": True,
+            "agent_role": role,
+            "reset": True,
+            "result": res
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "success": False, "error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000, debug=False)

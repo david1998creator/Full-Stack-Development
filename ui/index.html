@@ -2389,20 +2389,26 @@
       if (counterEl) counterEl.textContent = `~${totalTokens} tok/turn (Base: ${baseTokens} + Skills: +${skillsTokens})`;
 
       // --- CARD 1: SYSTEM PROMPT & CONFIG ---
-      const goalEl = document.getElementById('cardGoal');
-      if (goalEl) goalEl.textContent = goal;
-      const backstoryEl = document.getElementById('cardBackstory');
-      if (backstoryEl) backstoryEl.textContent = backstory;
+      const promptPreviewEl = document.getElementById('cardSystemPromptPreview');
+      if (promptPreviewEl) promptPreviewEl.textContent = sys.system_prompt || sys.default_system_prompt || 'Loading system prompt...';
+      
+      const badgeEl = document.getElementById('promptStatusBadge');
+      if (badgeEl) {
+        if (sys.is_custom_prompt) {
+          badgeEl.textContent = 'Custom Override';
+          badgeEl.className = 'text-[9px] px-1.5 py-0.5 rounded border border-indigo-500/40 bg-indigo-500/20 text-indigo-300 font-mono font-semibold';
+        } else {
+          badgeEl.textContent = 'Canonical';
+          badgeEl.className = 'text-[9px] px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-400 font-mono';
+        }
+      }
+
+      const promptTokensEl = document.getElementById('cardPromptTokens');
+      if (promptTokensEl) promptTokensEl.textContent = `~${baseTokens} tok`;
       
       const btnPrompt = document.getElementById('btnViewPromptDetail');
       if (btnPrompt) {
-        btnPrompt.onclick = () => {
-          openInspectorDetail(
-            `${agent.role} System Prompt & Config`,
-            'SYSTEM PROMPT',
-            `=== AGENT ROLE: ${agent.role} ===\n\nGoal:\n${goal}\n\nBackstory:\n${backstory}\n\nModel Config:\n- Provider: ${provider}\n- Model: ${model}\n- Tier: ${tier}\n- Temperature: ${temp}\n\nBase Prompt Tokens: ~${baseTokens} tokens`
-          );
-        };
+        btnPrompt.onclick = () => openPromptEditor(agent);
       }
 
       // --- CARD 2: MODULAR SKILLS ---
@@ -2448,10 +2454,6 @@
           });
         }
       }
-
-      // Quick add skill button in Card 2
-      const btnAddSkill = document.getElementById('btnAddSkillForRole');
-      if (btnAddSkill) btnAddSkill.onclick = () => openAddSkillModal(agent.role);
 
       // --- CARD 3: PLUGINS & TOOLS ---
       const pluginsList = document.getElementById('cardPluginsList');
@@ -2574,10 +2576,135 @@
       const drawer = document.getElementById('inspectorDetailDrawer');
       if (!drawer) return;
       drawer.classList.remove('hidden');
+
+      // Switch to View Mode
+      const viewBody = document.getElementById('detailViewContainer');
+      const viewFoot = document.getElementById('detailViewFooter');
+      const editBody = document.getElementById('promptEditContainer');
+      const editFoot = document.getElementById('promptEditFooter');
+      const copyBtn = document.getElementById('btnCopyInspectorDetail');
+
+      if (viewBody) viewBody.classList.remove('hidden');
+      if (viewFoot) viewFoot.classList.remove('hidden');
+      if (editBody) editBody.classList.add('hidden');
+      if (editFoot) editFoot.classList.add('hidden');
+      if (copyBtn) copyBtn.classList.remove('hidden');
+
       document.getElementById('inspectorDetailTitle').textContent = title;
       document.getElementById('inspectorDetailTag').textContent = typeTag;
       document.getElementById('inspectorDetailContent').textContent = content;
       currentDetailItem = content;
+    }
+
+    function openPromptEditor(agent) {
+      const drawer = document.getElementById('inspectorDetailDrawer');
+      if (!drawer) return;
+      drawer.classList.remove('hidden');
+
+      // Switch to Edit Mode
+      const viewBody = document.getElementById('detailViewContainer');
+      const viewFoot = document.getElementById('detailViewFooter');
+      const editBody = document.getElementById('promptEditContainer');
+      const editFoot = document.getElementById('promptEditFooter');
+      const copyBtn = document.getElementById('btnCopyInspectorDetail');
+
+      if (viewBody) viewBody.classList.add('hidden');
+      if (viewFoot) viewFoot.classList.add('hidden');
+      if (editBody) editBody.classList.remove('hidden');
+      if (editFoot) editFoot.classList.remove('hidden');
+      if (copyBtn) copyBtn.classList.add('hidden');
+
+      const sys = agent.system_config || {};
+      document.getElementById('inspectorDetailTitle').textContent = `${agent.role} Unified System Prompt`;
+      document.getElementById('inspectorDetailTag').textContent = sys.is_custom_prompt ? 'SYSTEM PROMPT • CUSTOM OVERRIDE' : 'SYSTEM PROMPT • CANONICAL DEFAULT';
+      
+      const textarea = document.getElementById('promptEditTextarea');
+      if (textarea) {
+        textarea.value = sys.system_prompt || sys.default_system_prompt || '';
+      }
+      updatePromptLiveTokens();
+    }
+
+    function updatePromptLiveTokens() {
+      const textarea = document.getElementById('promptEditTextarea');
+      if (!textarea) return;
+      const val = textarea.value.trim();
+      const tokens = val ? Math.round(val.split(/\s+/).filter(Boolean).length * 1.33) : 0;
+      const el = document.getElementById('promptEditTokens');
+      if (el) el.textContent = `~${tokens} tokens`;
+    }
+
+    async function savePromptHandler() {
+      const textarea = document.getElementById('promptEditTextarea');
+      if (!textarea) return;
+      const customPrompt = textarea.value.trim();
+      if (!customPrompt) {
+        alert('System prompt cannot be empty.');
+        return;
+      }
+
+      const saveBtn = document.getElementById('btnSavePrompt');
+      const origHtml = saveBtn ? saveBtn.innerHTML : '';
+      if (saveBtn) saveBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Saving...';
+
+      try {
+        const res = await fetch('/api/crew/prompt/update', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            agent_role: selectedInspectorRole,
+            custom_prompt: customPrompt
+          })
+        });
+        const data = await res.json();
+        if (saveBtn) {
+          saveBtn.innerHTML = '<i class="ph-bold ph-check text-emerald-400"></i> Saved!';
+          setTimeout(() => { saveBtn.innerHTML = origHtml; }, 1500);
+        }
+
+        // Reload crew data to update Card 1 preview and badge
+        await loadCrewInspectorData();
+        const updatedAgent = crewManifests.find(a => a.role === selectedInspectorRole);
+        if (updatedAgent) {
+          openPromptEditor(updatedAgent);
+        }
+      } catch (err) {
+        alert('Error saving prompt: ' + err.message);
+        if (saveBtn) saveBtn.innerHTML = origHtml;
+      }
+    }
+
+    async function resetPromptHandler() {
+      if (!confirm(`Reset ${selectedInspectorRole}'s system prompt to canonical default?`)) {
+        return;
+      }
+
+      const resetBtn = document.getElementById('btnResetPrompt');
+      const origHtml = resetBtn ? resetBtn.innerHTML : '';
+      if (resetBtn) resetBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Resetting...';
+
+      try {
+        const res = await fetch('/api/crew/prompt/reset', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ agent_role: selectedInspectorRole })
+        });
+        const data = await res.json();
+        if (resetBtn) {
+          resetBtn.innerHTML = '<i class="ph-bold ph-check text-emerald-400"></i> Reset!';
+          setTimeout(() => { resetBtn.innerHTML = origHtml; }, 1500);
+        }
+
+        // Reload crew data
+        await loadCrewInspectorData();
+        const updatedAgent = crewManifests.find(a => a.role === selectedInspectorRole);
+        if (updatedAgent) {
+          openPromptEditor(updatedAgent);
+        }
+      } catch (err) {
+        alert('Error resetting prompt: ' + err.message);
+        if (resetBtn) resetBtn.innerHTML = origHtml;
+      }
     }
 
     function closeInspectorDetail() {
@@ -2603,14 +2730,15 @@
       if (!modal) return;
       modal.classList.remove('hidden');
 
+      const targetRole = preselectedRole || selectedInspectorRole;
       const select = document.getElementById('newSkillRole');
       if (select) {
         select.innerHTML = '';
         crewManifests.forEach(agent => {
           const opt = document.createElement('option');
           opt.value = agent.role;
-          opt.textContent = `${agent.role} (${agent.name})`;
-          if (agent.role === preselectedRole) opt.selected = true;
+          opt.textContent = `${agent.role} (${agent.name || agent.role})`;
+          if (agent.role === targetRole) opt.selected = true;
           select.appendChild(opt);
         });
       }
@@ -2987,24 +3115,25 @@ description: Brief description of the custom capability
               <span class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                 <i class="ph-bold ph-terminal-window text-indigo-400"></i> Card 1: System Prompt
               </span>
-              <span class="text-[10px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono">~450 tok</span>
+              <div class="flex items-center gap-1.5">
+                <span id="promptStatusBadge" class="text-[9px] px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-400 font-mono">Canonical</span>
+                <span id="cardPromptTokens" class="text-[10px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono">~450 tok</span>
+              </div>
             </div>
 
             <div class="flex flex-col gap-2 flex-1">
               <div>
-                <div class="text-[10px] font-semibold uppercase text-slate-400">Role Goal</div>
-                <div id="cardGoal" class="text-xs text-slate-200 bg-slate-950/70 p-2 rounded-lg border border-slate-800/60 mt-1 line-clamp-3">Loading goal...</div>
-              </div>
-
-              <div>
-                <div class="text-[10px] font-semibold uppercase text-slate-400">Backstory &amp; Persona</div>
-                <div id="cardBackstory" class="text-xs text-slate-300 bg-slate-950/70 p-2 rounded-lg border border-slate-800/60 mt-1 line-clamp-4">Loading backstory...</div>
+                <div class="text-[10px] font-semibold uppercase text-slate-400 flex items-center justify-between">
+                  <span>Unified System Prompt Preview</span>
+                  <span class="text-[9px] text-slate-500 font-mono">Live Prompt Text</span>
+                </div>
+                <div id="cardSystemPromptPreview" class="text-xs text-slate-300 bg-slate-950/80 p-2.5 rounded-lg border border-slate-800/80 mt-1 max-h-[220px] overflow-y-auto font-mono whitespace-pre-wrap leading-relaxed select-text">Loading system prompt...</div>
               </div>
             </div>
 
-            <button id="btnViewPromptDetail" class="w-full mt-2 py-2 px-3 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
-              <span>View Full System Prompt</span>
-              <i class="ph ph-arrow-right"></i>
+            <button id="btnViewPromptDetail" class="w-full mt-2 py-2 px-3 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/35 border border-indigo-500/40 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
+              <i class="ph-bold ph-pencil-simple"></i>
+              <span>View &amp; Edit System Prompt</span>
             </button>
           </div>
 
@@ -3017,14 +3146,9 @@ description: Brief description of the custom capability
               <span class="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono">Hot-Toggle</span>
             </div>
 
-            <div id="cardSkillsList" class="space-y-2 flex-1 max-h-[320px] overflow-y-auto pr-1">
+            <div id="cardSkillsList" class="space-y-2 flex-1 max-h-[360px] overflow-y-auto pr-1">
               <!-- Dynamically populated skills -->
             </div>
-
-            <button id="btnAddSkillForRole" class="w-full mt-2 py-2 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
-              <i class="ph-bold ph-plus"></i>
-              <span>Add Custom Skill for Role</span>
-            </button>
           </div>
 
           <!-- CARD 3: PLUGINS & TOOLS -->
@@ -3036,7 +3160,7 @@ description: Brief description of the custom capability
               <span class="text-[10px] bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 px-1.5 py-0.5 rounded font-mono">Tools &amp; MCP</span>
             </div>
 
-            <div id="cardPluginsList" class="space-y-2 flex-1 max-h-[320px] overflow-y-auto pr-1">
+            <div id="cardPluginsList" class="space-y-2 flex-1 max-h-[360px] overflow-y-auto pr-1">
               <!-- Dynamically populated tools & plugins -->
             </div>
 
@@ -3050,8 +3174,9 @@ description: Brief description of the custom capability
       </div>
 
       <!-- SLIDE-OUT DETAIL DRAWER (Attached directly inside inspector modal) -->
-      <div id="inspectorDetailDrawer" class="hidden absolute top-0 right-0 w-full sm:w-[500px] h-full bg-[#0d131f] border-l border-slate-700 shadow-2xl z-20 flex flex-col transition-all">
-        <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/95">
+      <div id="inspectorDetailDrawer" class="hidden absolute top-0 right-0 w-full sm:w-[560px] h-full bg-[#0d131f] border-l border-slate-700 shadow-2xl z-20 flex flex-col transition-all">
+        <!-- Drawer Header -->
+        <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/95 shrink-0">
           <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
               <i class="ph-bold ph-file-text"></i>
@@ -3072,13 +3197,46 @@ description: Brief description of the custom capability
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-5">
-          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 whitespace-pre-wrap overflow-x-auto leading-relaxed" id="inspectorDetailContent"></pre>
+        <!-- Drawer Body: View Mode -->
+        <div id="detailViewContainer" class="flex-1 overflow-y-auto p-5">
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 whitespace-pre-wrap overflow-x-auto leading-relaxed select-text" id="inspectorDetailContent"></pre>
         </div>
 
-        <div class="p-3 border-t border-slate-800 bg-slate-900/80 text-xs text-slate-400 flex items-center justify-between">
+        <!-- Drawer Body: Edit Prompt Mode -->
+        <div id="promptEditContainer" class="hidden flex-1 flex flex-col p-5 overflow-hidden gap-2.5">
+          <div class="text-[11px] text-slate-400 flex items-center justify-between shrink-0">
+            <span>Unified system prompt containing full persona, goal, responsibilities, and operational rules.</span>
+          </div>
+          <textarea id="promptEditTextarea" class="flex-1 w-full bg-slate-950 p-4 rounded-xl border border-slate-700/80 text-xs font-mono text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-500 select-text resize-none" placeholder="Enter unified system prompt instructions..." oninput="updatePromptLiveTokens()"></textarea>
+          <div class="flex items-center justify-between text-[11px] text-slate-400 shrink-0">
+            <span id="promptEditTokens" class="font-mono text-indigo-400 font-semibold">~0 tokens</span>
+            <span class="text-emerald-400 text-[10px] flex items-center gap-1">
+              <i class="ph ph-check-circle"></i> Hot-reloaded into SQLite WAL without restart
+            </span>
+          </div>
+        </div>
+
+        <!-- Drawer Footer: View Mode -->
+        <div id="detailViewFooter" class="p-3 border-t border-slate-800 bg-slate-900/80 text-xs text-slate-400 flex items-center justify-between shrink-0">
           <span class="text-[10px] text-slate-500">Live Runtime Prompt Injection</span>
           <button onclick="closeInspectorDetail()" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium cursor-pointer">Close Drawer</button>
+        </div>
+
+        <!-- Drawer Footer: Edit Prompt Mode -->
+        <div id="promptEditFooter" class="hidden p-3 border-t border-slate-800 bg-slate-900/90 text-xs text-slate-400 flex items-center justify-between shrink-0">
+          <button id="btnResetPrompt" onclick="resetPromptHandler()" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-1 transition cursor-pointer" title="Revert to built-in canonical system prompt">
+            <i class="ph ph-arrow-counter-clockwise"></i>
+            <span>Reset to Default</span>
+          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="closeInspectorDetail()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer">
+              Cancel
+            </button>
+            <button id="btnSavePrompt" onclick="savePromptHandler()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="ph-bold ph-floppy-disk"></i>
+              <span>Save System Prompt</span>
+            </button>
+          </div>
         </div>
       </div>
 

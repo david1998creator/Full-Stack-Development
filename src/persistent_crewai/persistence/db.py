@@ -236,6 +236,16 @@ CREATE TABLE IF NOT EXISTS agent_plugins (
     UNIQUE(project_id, agent_role, plugin_name)
 );
 CREATE INDEX IF NOT EXISTS idx_agent_plugins ON agent_plugins(project_id, agent_role);
+
+-- 13. Agent Custom Prompts: User-editable unified system prompt overrides per agent and project
+CREATE TABLE IF NOT EXISTS agent_custom_prompts (
+    project_id VARCHAR(64) DEFAULT 'default_project',
+    agent_role VARCHAR(64) NOT NULL,
+    custom_prompt TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(project_id, agent_role)
+);
+CREATE INDEX IF NOT EXISTS idx_agent_custom_prompts ON agent_custom_prompts(project_id, agent_role);
 """
 
 

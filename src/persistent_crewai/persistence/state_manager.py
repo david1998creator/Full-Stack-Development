@@ -1561,3 +1561,43 @@ class StateManager:
                 (pid, canon_role, plugin_name, 1 if enabled else 0)
             )
         return {"project_id": pid, "agent_role": canon_role, "plugin_name": plugin_name, "enabled": enabled}
+
+    # -------------------------------------------------------------------------
+    # Agent Custom Unified System Prompts
+    # -------------------------------------------------------------------------
+    def get_agent_custom_prompt(self, agent_role: str, project_id: Optional[str] = None) -> Optional[str]:
+        """Retrieve user-customized unified system prompt override for an agent role, if any."""
+        pid = project_id or self.project_id
+        canon_role = normalize_role(agent_role)
+        with self.connection() as conn:
+            row = conn.execute(
+                "SELECT custom_prompt FROM agent_custom_prompts WHERE project_id = ? AND agent_role = ?",
+                (pid, canon_role)
+            ).fetchone()
+            return row["custom_prompt"] if row else None
+
+    def set_agent_custom_prompt(self, agent_role: str, custom_prompt: str, project_id: Optional[str] = None) -> Dict[str, Any]:
+        """Persist or update custom unified system prompt override for an agent role."""
+        pid = project_id or self.project_id
+        canon_role = normalize_role(agent_role)
+        with self.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO agent_custom_prompts (project_id, agent_role, custom_prompt, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(project_id, agent_role) DO UPDATE SET custom_prompt = excluded.custom_prompt, updated_at = CURRENT_TIMESTAMP
+                """,
+                (pid, canon_role, custom_prompt.strip())
+            )
+        return {"project_id": pid, "agent_role": canon_role, "custom_prompt": custom_prompt.strip()}
+
+    def reset_agent_custom_prompt(self, agent_role: str, project_id: Optional[str] = None) -> Dict[str, Any]:
+        """Remove custom prompt override, reverting agent to default canonical system prompt."""
+        pid = project_id or self.project_id
+        canon_role = normalize_role(agent_role)
+        with self.connection() as conn:
+            conn.execute(
+                "DELETE FROM agent_custom_prompts WHERE project_id = ? AND agent_role = ?",
+                (pid, canon_role)
+            )
+        return {"project_id": pid, "agent_role": canon_role, "reset": True}

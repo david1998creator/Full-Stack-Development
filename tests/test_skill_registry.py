@@ -112,6 +112,32 @@ class TestSkillPluginRegistry(unittest.TestCase):
         names = [s["name"] for s in db_manifest["skills"]]
         self.assertIn("redis_caching", names)
 
+    def test_custom_prompt_persistence_and_reset(self):
+        # Default state
+        manifest = self.registry.get_agent_manifest("Developer", project_id="test_proj")
+        self.assertFalse(manifest["system_config"]["is_custom_prompt"])
+        self.assertIn("=== DEVELOPER AGENT SYSTEM PROMPT ===", manifest["system_config"]["system_prompt"])
+
+        # Override prompt
+        custom_txt = "=== SPECIAL DEVELOPER DIRECTIVES ===\nPrioritize clean architecture."
+        self.state_mgr.set_agent_custom_prompt("Developer", custom_txt, project_id="test_proj")
+
+        stored = self.state_mgr.get_agent_custom_prompt("Developer", project_id="test_proj")
+        self.assertEqual(stored, custom_txt)
+
+        # Re-fetch manifest
+        updated_manifest = self.registry.get_agent_manifest("Developer", project_id="test_proj")
+        self.assertTrue(updated_manifest["system_config"]["is_custom_prompt"])
+        self.assertEqual(updated_manifest["system_config"]["system_prompt"], custom_txt)
+
+        # Reset prompt
+        self.state_mgr.reset_agent_custom_prompt("Developer", project_id="test_proj")
+        self.assertIsNone(self.state_mgr.get_agent_custom_prompt("Developer", project_id="test_proj"))
+
+        reset_manifest = self.registry.get_agent_manifest("Developer", project_id="test_proj")
+        self.assertFalse(reset_manifest["system_config"]["is_custom_prompt"])
+        self.assertIn("=== DEVELOPER AGENT SYSTEM PROMPT ===", reset_manifest["system_config"]["system_prompt"])
+
 
 class TestCrewApiServer(unittest.TestCase):
     def setUp(self):
@@ -198,6 +224,42 @@ class TestCrewApiServer(unittest.TestCase):
         arch = next(a for a in crew if a["role"] == "Architect")
         names = [s["name"] for s in arch["skills"]]
         self.assertIn("event_driven_architecture", names)
+
+    def test_update_and_reset_prompt_api(self):
+        # 1. Update prompt
+        custom_text = "=== CUSTOM DEVELOPER PROMPT ===\nWrite async code only."
+        res = self.client.post(
+            "/api/crew/prompt/update",
+            data=json.dumps({"agent_role": "Developer", "custom_prompt": custom_text}),
+            content_type="application/json"
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["status"], "ok")
+
+        # Verify via GET /api/crew
+        get_res = self.client.get("/api/crew")
+        crew = get_res.get_json()["crew"]
+        dev = next(a for a in crew if a["role"] == "Developer")
+        self.assertTrue(dev["system_config"]["is_custom_prompt"])
+        self.assertEqual(dev["system_config"]["system_prompt"], custom_text)
+
+        # 2. Reset prompt
+        reset_res = self.client.post(
+            "/api/crew/prompt/reset",
+            data=json.dumps({"agent_role": "Developer"}),
+            content_type="application/json"
+        )
+        self.assertEqual(reset_res.status_code, 200)
+        reset_data = reset_res.get_json()
+        self.assertEqual(reset_data["status"], "ok")
+
+        # Verify via GET /api/crew that it's back to canonical default
+        get_res2 = self.client.get("/api/crew")
+        crew2 = get_res2.get_json()["crew"]
+        dev2 = next(a for a in crew2 if a["role"] == "Developer")
+        self.assertFalse(dev2["system_config"]["is_custom_prompt"])
+        self.assertIn("=== DEVELOPER AGENT SYSTEM PROMPT ===", dev2["system_config"]["system_prompt"])
 
 
 if __name__ == "__main__":

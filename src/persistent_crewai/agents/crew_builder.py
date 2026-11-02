@@ -437,12 +437,22 @@ def build_agent(
         except Exception as e:
             logger.warning("Failed to initialize agent status in StateManager: %s", e)
 
+    # Check for user-customized unified system prompt override
+    custom_prompt = None
+    if state_manager and hasattr(state_manager, "get_agent_custom_prompt"):
+        try:
+            custom_prompt = state_manager.get_agent_custom_prompt(canonical)
+        except Exception as e:
+            logger.debug("Could not fetch custom prompt for %s: %s", canonical, e)
+
+    effective_system_template = custom_prompt if custom_prompt else role_def.system_prompt
+
     return Agent(
         role=canonical,
         display_name=role_def.display_name,
         goal=role_def.goal,
         backstory=role_def.backstory,
-        system_template=role_def.system_prompt,
+        system_template=effective_system_template,
         tools=resolved_tools,
         llm=resolved_llm,
         allow_delegation=allow_delegation,

@@ -361,17 +361,38 @@ class SkillPluginRegistry:
 
         total_skill_tokens = sum(s.get("estimated_tokens", 0) for s in agent_skills if s.get("enabled"))
 
+        # Check SQLite for custom unified system prompt override
+        custom_prompt = None
+        if self.state_mgr and hasattr(self.state_mgr, "get_agent_custom_prompt"):
+            custom_prompt = self.state_mgr.get_agent_custom_prompt(agent_role=canon_role, project_id=project_id)
+
+        default_system_prompt = f"""=== {canon_role.upper()} AGENT SYSTEM PROMPT ===
+Goal:
+{role_def.goal}
+
+Backstory & Persona:
+{role_def.backstory}
+
+{role_def.system_prompt.strip()}
+"""
+        active_system_prompt = custom_prompt if custom_prompt else default_system_prompt
+        is_custom_prompt = bool(custom_prompt)
+        base_prompt_tokens = int(len(active_system_prompt.split()) * 1.33)
+
         return {
             "role": canon_role,
             "status": "idle",
             "system_config": {
                 "goal": role_def.goal,
                 "backstory": role_def.backstory,
+                "system_prompt": active_system_prompt,
+                "default_system_prompt": default_system_prompt,
+                "is_custom_prompt": is_custom_prompt,
                 "provider_tier": llm_cfg.get("preferred_provider", "gemini"),
                 "model_name": llm_cfg.get("model", "gemini-3.5-flash-lite"),
                 "temperature": llm_cfg.get("temperature", 0.7),
                 "allow_delegation": role_def.allow_delegation,
-                "base_prompt_tokens": int(len(f"{role_def.goal} {role_def.backstory}".split()) * 1.33),
+                "base_prompt_tokens": base_prompt_tokens,
             },
             "skills": agent_skills,
             "plugins": agent_plugins,
