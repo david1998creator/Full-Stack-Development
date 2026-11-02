@@ -122,9 +122,15 @@
           <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">AGENTS</div>
           <div class="text-sm font-semibold text-white">Execution roster</div>
         </div>
-        <button onclick="refreshData()" title="Refresh" class="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800">
-          <i class="ph ph-arrows-clockwise text-base"></i>
-        </button>
+        <div class="flex items-center gap-1.5">
+          <button id="btnOpenCrewInspector" onclick="openCrewInspector()" title="Inspect Crew Specs, Skills & Tools" class="flex items-center gap-1.5 text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400/60 px-2.5 py-1.5 rounded-lg transition shadow-sm cursor-pointer">
+            <i class="ph-bold ph-sliders-horizontal text-sm"></i>
+            <span>Inspect Crew</span>
+          </button>
+          <button onclick="refreshData()" title="Refresh" class="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800 cursor-pointer">
+            <i class="ph ph-arrows-clockwise text-base"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Agent Cards Scrollable List -->
@@ -1048,9 +1054,14 @@
                 <div class="text-[11px] text-slate-400 line-clamp-1">${agent.description}</div>
               </div>
             </div>
-            <span class="text-[10px] font-medium border px-1.5 py-0.5 rounded ${statusColor}">
-              ${agent.status}
-            </span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="event.stopPropagation(); openCrewInspector('${agent.name}')" title="Inspect ${agent.name} Specs, Skills & Tools" class="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/90 rounded transition">
+                <i class="ph-bold ph-sliders-horizontal text-xs"></i>
+              </button>
+              <span class="text-[10px] font-medium border px-1.5 py-0.5 rounded ${statusColor}">
+                ${agent.status}
+              </span>
+            </div>
           </div>
 
           <div class="text-[11px] text-slate-300 bg-slate-950/50 p-2 rounded-lg border border-slate-800/40 line-clamp-2">
@@ -2266,6 +2277,403 @@
       }
     }
 
+    // ==========================================
+    // CREW & AGENT INSPECTOR (SPECS, SKILLS & TOOLS)
+    // ==========================================
+    let crewManifests = [];
+    let selectedInspectorRole = 'Coordinator';
+    let currentDetailItem = null;
+
+    async function openCrewInspector(targetRole) {
+      if (targetRole) {
+        selectedInspectorRole = targetRole;
+      }
+      const modal = document.getElementById('crewInspectorModal');
+      modal.classList.remove('hidden');
+      closeInspectorDetail();
+      await loadCrewInspectorData();
+    }
+
+    function closeCrewInspector() {
+      document.getElementById('crewInspectorModal').classList.add('hidden');
+      closeInspectorDetail();
+    }
+
+    async function loadCrewInspectorData() {
+      try {
+        const res = await fetch('/api/crew');
+        const data = await res.json();
+        crewManifests = data.crew || [];
+
+        // Update overall summary header
+        const totalSkills = data.total_skills || 0;
+        const activeSkills = data.active_skills || 0;
+        const customSkills = data.custom_skills_count || 0;
+        const totalPlugins = data.total_plugins || 0;
+
+        const statsEl = document.getElementById('inspectorSkillStats');
+        if (statsEl) {
+          statsEl.textContent = `${activeSkills}/${totalSkills} Active Skills (${customSkills} Custom) • ${totalPlugins} Tools & MCP`;
+        }
+
+        renderInspectorTabs();
+        renderInspectorAgentDetails(selectedInspectorRole);
+      } catch (err) {
+        console.error('Failed to load crew manifests:', err);
+      }
+    }
+
+    function renderInspectorTabs() {
+      const container = document.getElementById('crewInspectorTabs');
+      if (!container) return;
+      container.innerHTML = '';
+
+      crewManifests.forEach(agent => {
+        const isSelected = agent.role === selectedInspectorRole;
+        const activeSkillsCount = (agent.skills || []).filter(s => s.enabled).length;
+        const btn = document.createElement('button');
+        btn.className = `px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 whitespace-nowrap transition cursor-pointer ${
+          isSelected 
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/30 font-semibold' 
+            : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+        }`;
+        btn.onclick = () => selectInspectorAgent(agent.role);
+        btn.innerHTML = `
+          <span>${agent.role}</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-800 text-slate-300'}">${activeSkillsCount}</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function selectInspectorAgent(role) {
+      selectedInspectorRole = role;
+      renderInspectorTabs();
+      renderInspectorAgentDetails(role);
+      closeInspectorDetail();
+    }
+
+    function renderInspectorAgentDetails(role) {
+      const agent = crewManifests.find(a => a.role === role) || crewManifests[0];
+      if (!agent) return;
+
+      const sys = agent.system_config || {};
+      const preset = agent.preset || {};
+      const model = sys.model_name || preset.model || 'gemini-3.5-flash-lite';
+      const provider = sys.provider_tier || preset.provider || 'Google Gemini';
+      const tier = sys.tier || preset.tier || 'Fast Tier';
+      const temp = sys.temperature !== undefined ? sys.temperature : (preset.temperature ?? 0.2);
+      const baseTokens = sys.base_prompt_tokens || 450;
+      const goal = sys.goal || agent.goal || 'Autonomous software development execution';
+      const backstory = sys.backstory || agent.backstory || 'Specialized autonomous engineering persona.';
+
+      // Agent Header Info
+      const nameEl = document.getElementById('inspectorAgentName');
+      if (nameEl) nameEl.textContent = agent.name || agent.role;
+      const titleEl = document.getElementById('inspectorAgentRoleTitle');
+      if (titleEl) titleEl.textContent = agent.role;
+      const statusEl = document.getElementById('inspectorAgentStatus');
+      if (statusEl) statusEl.textContent = agent.status || 'Available';
+      
+      const modelBadge = document.getElementById('inspectorModelBadge');
+      if (modelBadge) modelBadge.textContent = `${model} (${tier})`;
+      const providerBadge = document.getElementById('inspectorProviderBadge');
+      if (providerBadge) providerBadge.textContent = provider;
+      const tempBadge = document.getElementById('inspectorTempBadge');
+      if (tempBadge) tempBadge.textContent = `temp ${temp}`;
+
+      // Calculate token overhead
+      const skillsTokens = (agent.skills || []).filter(s => s.enabled).reduce((sum, s) => sum + (s.estimated_tokens || s.tokens_approx || 200), 0);
+      const totalTokens = baseTokens + skillsTokens;
+      const counterEl = document.getElementById('inspectorTokenCounter');
+      if (counterEl) counterEl.textContent = `~${totalTokens} tok/turn (Base: ${baseTokens} + Skills: +${skillsTokens})`;
+
+      // --- CARD 1: SYSTEM PROMPT & CONFIG ---
+      const goalEl = document.getElementById('cardGoal');
+      if (goalEl) goalEl.textContent = goal;
+      const backstoryEl = document.getElementById('cardBackstory');
+      if (backstoryEl) backstoryEl.textContent = backstory;
+      
+      const btnPrompt = document.getElementById('btnViewPromptDetail');
+      if (btnPrompt) {
+        btnPrompt.onclick = () => {
+          openInspectorDetail(
+            `${agent.role} System Prompt & Config`,
+            'SYSTEM PROMPT',
+            `=== AGENT ROLE: ${agent.role} ===\n\nGoal:\n${goal}\n\nBackstory:\n${backstory}\n\nModel Config:\n- Provider: ${provider}\n- Model: ${model}\n- Tier: ${tier}\n- Temperature: ${temp}\n\nBase Prompt Tokens: ~${baseTokens} tokens`
+          );
+        };
+      }
+
+      // --- CARD 2: MODULAR SKILLS ---
+      const skillsList = document.getElementById('cardSkillsList');
+      if (skillsList) {
+        skillsList.innerHTML = '';
+        const skills = agent.skills || [];
+        if (skills.length === 0) {
+          skillsList.innerHTML = '<div class="text-slate-500 text-xs italic py-3">No skills attached to this agent.</div>';
+        } else {
+          skills.forEach(skill => {
+            const isCustom = skill.builtin === false || skill.type === 'custom';
+            const badgeClass = isCustom ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-slate-800 text-slate-300 border-slate-700';
+            const badgeLabel = isCustom ? 'Custom' : 'Built-in';
+            const skillTitle = skill.title || skill.display_name || skill.name;
+            const skillTokens = skill.estimated_tokens || skill.tokens_approx || 200;
+
+            const item = document.createElement('div');
+            item.className = 'p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 hover:border-slate-700 flex flex-col gap-2 transition';
+            item.innerHTML = `
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-white truncate">${skillTitle}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded border ${badgeClass} font-mono">${badgeLabel}</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">${skill.description || 'Modular execution instructions'}</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                  <input type="checkbox" class="sr-only peer" ${skill.enabled ? 'checked' : ''} onchange="toggleSkillHandler('${agent.role}', '${skill.name}', this.checked)">
+                  <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800/60">
+                <span class="font-mono text-emerald-400/90">+${skillTokens} tokens</span>
+                <button onclick="viewSkillDetailHandler('${agent.role}', '${skill.name}')" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium hover:underline cursor-pointer">
+                  <span>View Instructions</span>
+                  <i class="ph ph-arrow-right"></i>
+                </button>
+              </div>
+            `;
+            skillsList.appendChild(item);
+          });
+        }
+      }
+
+      // Quick add skill button in Card 2
+      const btnAddSkill = document.getElementById('btnAddSkillForRole');
+      if (btnAddSkill) btnAddSkill.onclick = () => openAddSkillModal(agent.role);
+
+      // --- CARD 3: PLUGINS & TOOLS ---
+      const pluginsList = document.getElementById('cardPluginsList');
+      if (pluginsList) {
+        pluginsList.innerHTML = '';
+        const plugins = agent.plugins || [];
+        if (plugins.length === 0) {
+          pluginsList.innerHTML = '<div class="text-slate-500 text-xs italic py-3">No tools or MCP plugins assigned.</div>';
+        } else {
+          plugins.forEach(plugin => {
+            const isMcp = plugin.type === 'mcp_server' || plugin.type === 'mcp';
+            const isCustomPlugin = plugin.builtin === false;
+            const badgeClass = isMcp 
+              ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' 
+              : (isCustomPlugin ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-slate-800 text-slate-300 border-slate-700');
+            const badgeLabel = isMcp ? 'MCP Server' : (isCustomPlugin ? 'Plugin' : 'Built-in Tool');
+            const pluginTitle = plugin.title || plugin.display_name || plugin.name;
+
+            const item = document.createElement('div');
+            item.className = 'p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 hover:border-slate-700 flex flex-col gap-2 transition';
+            item.innerHTML = `
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-white truncate">${pluginTitle}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded border ${badgeClass} font-mono">${badgeLabel}</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">${plugin.description || 'External execution tool'}</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                  <input type="checkbox" class="sr-only peer" ${plugin.enabled ? 'checked' : ''} onchange="togglePluginHandler('${agent.role}', '${plugin.name}', this.checked)">
+                  <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+                </label>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800/60">
+                <span class="font-mono text-slate-400 truncate max-w-[140px]">${plugin.entrypoint || (isMcp ? 'External Process' : 'Local Tool')}</span>
+                <button onclick="viewPluginDetailHandler('${agent.role}', '${plugin.name}')" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium hover:underline cursor-pointer">
+                  <span>View Schema</span>
+                  <i class="ph ph-arrow-right"></i>
+                </button>
+              </div>
+            `;
+            pluginsList.appendChild(item);
+          });
+        }
+      }
+    }
+
+    async function toggleSkillHandler(agentRole, skillName, enabled) {
+      try {
+        const res = await fetch('/api/crew/skill/toggle', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ agent_role: agentRole, skill_name: skillName, enabled: enabled })
+        });
+        const data = await res.json();
+        const agent = crewManifests.find(a => a.role === agentRole);
+        if (agent) {
+          const s = (agent.skills || []).find(x => x.name === skillName);
+          if (s) s.enabled = enabled;
+        }
+        renderInspectorTabs();
+        renderInspectorAgentDetails(agentRole);
+      } catch (err) {
+        console.error('Error toggling skill:', err);
+      }
+    }
+
+    async function togglePluginHandler(agentRole, pluginName, enabled) {
+      try {
+        const res = await fetch('/api/crew/plugin/toggle', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ agent_role: agentRole, plugin_name: pluginName, enabled: enabled })
+        });
+        const data = await res.json();
+        const agent = crewManifests.find(a => a.role === agentRole);
+        if (agent) {
+          const p = (agent.plugins || []).find(x => x.name === pluginName);
+          if (p) p.enabled = enabled;
+        }
+        renderInspectorAgentDetails(agentRole);
+      } catch (err) {
+        console.error('Error toggling plugin:', err);
+      }
+    }
+
+    function viewSkillDetailHandler(agentRole, skillName) {
+      const agent = crewManifests.find(a => a.role === agentRole);
+      if (!agent) return;
+      const skill = (agent.skills || []).find(s => s.name === skillName);
+      if (!skill) return;
+
+      const pathInfo = skill.path ? `\n\nSource Path: ${skill.path}` : '';
+      const skillType = skill.builtin ? 'BUILT-IN SKILL' : 'CUSTOM SKILL (SKILL.MD)';
+      const instructions = skill.instructions || skill.content || skill.description || 'No instruction body found.';
+      openInspectorDetail(
+        skill.title || skill.display_name || skill.name,
+        `SKILL • ${skillType}`,
+        instructions + pathInfo
+      );
+    }
+
+    function viewPluginDetailHandler(agentRole, pluginName) {
+      const agent = crewManifests.find(a => a.role === agentRole);
+      if (!agent) return;
+      const plugin = (agent.plugins || []).find(p => p.name === pluginName);
+      if (!plugin) return;
+
+      const isMcp = plugin.type === 'mcp_server' || plugin.type === 'mcp';
+      const detailText = `Name: ${plugin.name}\nType: ${plugin.type || (plugin.builtin ? 'Built-in Tool' : 'Plugin')}\nEntrypoint: ${plugin.entrypoint || (isMcp ? 'External Process via Stdio MCP' : 'Local Python Tool')}\nStatus: ${plugin.enabled ? 'Active / Enabled' : 'Disabled'}\n\nDescription:\n${plugin.description}\n\nSchema / Signature:\nCallable by agent via function calling / LangChain StructuredTool interface.`;
+      openInspectorDetail(
+        plugin.title || plugin.display_name || plugin.name,
+        `TOOL / PLUGIN • ${isMcp ? 'MCP SERVER' : (plugin.builtin ? 'BUILT-IN TOOL' : 'PYTHON PLUGIN')}`,
+        detailText
+      );
+    }
+
+    function openInspectorDetail(title, typeTag, content) {
+      const drawer = document.getElementById('inspectorDetailDrawer');
+      if (!drawer) return;
+      drawer.classList.remove('hidden');
+      document.getElementById('inspectorDetailTitle').textContent = title;
+      document.getElementById('inspectorDetailTag').textContent = typeTag;
+      document.getElementById('inspectorDetailContent').textContent = content;
+      currentDetailItem = content;
+    }
+
+    function closeInspectorDetail() {
+      const drawer = document.getElementById('inspectorDetailDrawer');
+      if (drawer) drawer.classList.add('hidden');
+    }
+
+    function copyInspectorDetail() {
+      if (currentDetailItem) {
+        navigator.clipboard.writeText(currentDetailItem);
+        const btn = document.getElementById('btnCopyInspectorDetail');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '<i class="ph-bold ph-check text-emerald-400"></i> Copied!';
+          setTimeout(() => { btn.innerHTML = orig; }, 1500);
+        }
+      }
+    }
+
+    // --- CREATE CUSTOM SKILL MODAL ---
+    function openAddSkillModal(preselectedRole) {
+      const modal = document.getElementById('addSkillModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+
+      const select = document.getElementById('newSkillRole');
+      if (select) {
+        select.innerHTML = '';
+        crewManifests.forEach(agent => {
+          const opt = document.createElement('option');
+          opt.value = agent.role;
+          opt.textContent = `${agent.role} (${agent.name})`;
+          if (agent.role === preselectedRole) opt.selected = true;
+          select.appendChild(opt);
+        });
+      }
+
+      const nameInput = document.getElementById('newSkillName');
+      if (nameInput) nameInput.value = '';
+      const descInput = document.getElementById('newSkillDesc');
+      if (descInput) descInput.value = '';
+      const contentInput = document.getElementById('newSkillContent');
+      if (contentInput) {
+        contentInput.value = 
+`---
+name: custom_skill
+description: Brief description of the custom capability
+---
+
+# Instructions
+1. Follow production patterns and clean coding guidelines.
+2. Ensure full type hints and comprehensive test coverage.
+`;
+      }
+    }
+
+    function closeAddSkillModal() {
+      const modal = document.getElementById('addSkillModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function submitNewSkill() {
+      const role = document.getElementById('newSkillRole').value;
+      const name = document.getElementById('newSkillName').value.trim();
+      const desc = document.getElementById('newSkillDesc').value.trim();
+      const content = document.getElementById('newSkillContent').value.trim();
+
+      if (!name) {
+        alert('Please enter a skill identifier.');
+        return;
+      }
+      if (!content) {
+        alert('Please enter markdown instructions for the skill.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/crew/skill/create', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            target_role: role,
+            skill_name: name,
+            description: desc,
+            content: content
+          })
+        });
+        const data = await res.json();
+        closeAddSkillModal();
+        selectedInspectorRole = role;
+        await loadCrewInspectorData();
+      } catch (err) {
+        alert('Error creating skill: ' + err.message);
+      }
+    }
+
     // Launch
     window.onload = function() {
       init();
@@ -2494,6 +2902,238 @@
       <button onclick="triggerSimulatedBudgetGuard()" class="text-cyan-400 hover:text-cyan-300 font-medium hover:underline flex items-center gap-1 text-[11px]">
         <i class="ph ph-lightning"></i> Test Budget Guard
       </button>
+    </div>
+  </div>
+
+  <!-- CREW & AGENT INSPECTOR MODAL -->
+  <div id="crewInspectorModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="glass-panel bg-[#0b0f17] border border-slate-700/80 rounded-2xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative">
+      
+      <!-- Modal Top Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/80 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <i class="ph-bold ph-sliders-horizontal text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              Crew &amp; Agent Inspector
+              <span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">Dynamic Skills &amp; Plugins</span>
+            </h3>
+            <p id="inspectorSkillStats" class="text-xs text-slate-400 mt-0.5">Loading crew configuration...</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <button onclick="openAddSkillModal(selectedInspectorRole)" class="flex items-center gap-1.5 text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-lg transition cursor-pointer">
+            <i class="ph-bold ph-plus"></i>
+            <span>Add Custom Skill</span>
+          </button>
+          <button onclick="closeCrewInspector()" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white cursor-pointer">
+            <i class="ph ph-x text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Agent Role Selection Tabs Bar (Horizontally Scrollable) -->
+      <div class="px-6 py-2.5 bg-slate-950/70 border-b border-slate-800/80 overflow-x-auto flex items-center gap-2 shrink-0 scrollbar-none" id="crewInspectorTabs">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Main Agent Detail Container -->
+      <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+        
+        <!-- Active Agent Overview Banner -->
+        <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/50 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 text-xl font-bold">
+              <i class="ph-bold ph-user-gear"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 id="inspectorAgentName" class="text-base font-bold text-white">Developer</h4>
+                <span id="inspectorAgentRoleTitle" class="text-xs text-slate-400 font-mono">Developer</span>
+                <span id="inspectorAgentStatus" class="text-[10px] bg-emerald-950/80 border border-emerald-700/60 text-emerald-400 px-2 py-0.5 rounded font-medium">Available</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-400">
+                <span class="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                  <i class="ph ph-cpu text-sky-400"></i>
+                  <span id="inspectorModelBadge">gemini-2.5-flash (Fast Tier)</span>
+                </span>
+                <span class="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                  <i class="ph ph-cloud text-amber-400"></i>
+                  <span id="inspectorProviderBadge">Google Gemini</span>
+                </span>
+                <span class="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                  <i class="ph ph-thermometer-simple text-purple-400"></i>
+                  <span id="inspectorTempBadge">temp 0.2</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-end">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Token Overhead</div>
+            <div id="inspectorTokenCounter" class="text-xs font-mono font-bold text-emerald-400 mt-0.5">~750 tok/turn (Base: 450 + Skills: +300)</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Dynamically injected into runtime prompts</div>
+          </div>
+        </div>
+
+        <!-- 3 CARDS ROW (Side-by-side matching sketch) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          
+          <!-- CARD 1: SYSTEM PROMPT & CONFIG -->
+          <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <span class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="ph-bold ph-terminal-window text-indigo-400"></i> Card 1: System Prompt
+              </span>
+              <span class="text-[10px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono">~450 tok</span>
+            </div>
+
+            <div class="flex flex-col gap-2 flex-1">
+              <div>
+                <div class="text-[10px] font-semibold uppercase text-slate-400">Role Goal</div>
+                <div id="cardGoal" class="text-xs text-slate-200 bg-slate-950/70 p-2 rounded-lg border border-slate-800/60 mt-1 line-clamp-3">Loading goal...</div>
+              </div>
+
+              <div>
+                <div class="text-[10px] font-semibold uppercase text-slate-400">Backstory &amp; Persona</div>
+                <div id="cardBackstory" class="text-xs text-slate-300 bg-slate-950/70 p-2 rounded-lg border border-slate-800/60 mt-1 line-clamp-4">Loading backstory...</div>
+              </div>
+            </div>
+
+            <button id="btnViewPromptDetail" class="w-full mt-2 py-2 px-3 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
+              <span>View Full System Prompt</span>
+              <i class="ph ph-arrow-right"></i>
+            </button>
+          </div>
+
+          <!-- CARD 2: MODULAR SKILLS -->
+          <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <span class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="ph-bold ph-sparkle text-emerald-400"></i> Card 2: Modular Skills
+              </span>
+              <span class="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono">Hot-Toggle</span>
+            </div>
+
+            <div id="cardSkillsList" class="space-y-2 flex-1 max-h-[320px] overflow-y-auto pr-1">
+              <!-- Dynamically populated skills -->
+            </div>
+
+            <button id="btnAddSkillForRole" class="w-full mt-2 py-2 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
+              <i class="ph-bold ph-plus"></i>
+              <span>Add Custom Skill for Role</span>
+            </button>
+          </div>
+
+          <!-- CARD 3: PLUGINS & TOOLS -->
+          <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <span class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="ph-bold ph-wrench text-cyan-400"></i> Card 3: Plugins &amp; Tools
+              </span>
+              <span class="text-[10px] bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 px-1.5 py-0.5 rounded font-mono">Tools &amp; MCP</span>
+            </div>
+
+            <div id="cardPluginsList" class="space-y-2 flex-1 max-h-[320px] overflow-y-auto pr-1">
+              <!-- Dynamically populated tools & plugins -->
+            </div>
+
+            <div class="text-[11px] text-slate-500 italic p-2 bg-slate-950/40 rounded-lg border border-slate-800/40 mt-auto">
+              Auto-discovers tools in <code>plugins/*.py</code> and external MCP servers from <code>mcp.json</code>.
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- SLIDE-OUT DETAIL DRAWER (Attached directly inside inspector modal) -->
+      <div id="inspectorDetailDrawer" class="hidden absolute top-0 right-0 w-full sm:w-[500px] h-full bg-[#0d131f] border-l border-slate-700 shadow-2xl z-20 flex flex-col transition-all">
+        <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/95">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <i class="ph-bold ph-file-text"></i>
+            </div>
+            <div class="min-w-0">
+              <div id="inspectorDetailTag" class="text-[9px] font-mono uppercase tracking-wider text-indigo-400 font-semibold">SKILL INSTRUCTIONS</div>
+              <h4 id="inspectorDetailTitle" class="text-sm font-bold text-white truncate">Skill Title</h4>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="btnCopyInspectorDetail" onclick="copyInspectorDetail()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1 cursor-pointer">
+              <i class="ph ph-copy"></i>
+              <span>Copy</span>
+            </button>
+            <button onclick="closeInspectorDetail()" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white cursor-pointer">
+              <i class="ph ph-x text-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-5">
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 whitespace-pre-wrap overflow-x-auto leading-relaxed" id="inspectorDetailContent"></pre>
+        </div>
+
+        <div class="p-3 border-t border-slate-800 bg-slate-900/80 text-xs text-slate-400 flex items-center justify-between">
+          <span class="text-[10px] text-slate-500">Live Runtime Prompt Injection</span>
+          <button onclick="closeInspectorDetail()" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium cursor-pointer">Close Drawer</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ADD CUSTOM SKILL MODAL -->
+  <div id="addSkillModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <i class="ph-bold ph-sparkle text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Create Modular Custom Skill</h3>
+            <p class="text-xs text-slate-400">Saved to <code>custom_skills/{name}/SKILL.md</code> and auto-injected</p>
+          </div>
+        </div>
+        <button onclick="closeAddSkillModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white cursor-pointer">
+          <i class="ph ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 overflow-y-auto flex-1">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Target Agent Role</label>
+          <select id="newSkillRole" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"></select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Skill Identifier (Folder Name)</label>
+          <input type="text" id="newSkillName" placeholder="e.g. fastapi_jwt_auth or graphql_resolvers" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Brief Description</label>
+          <input type="text" id="newSkillDesc" placeholder="e.g. Implements production JWT authentication and refresh tokens" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Skill Content (Markdown &amp; Instructions)</label>
+          <textarea id="newSkillContent" rows="10" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 leading-relaxed"></textarea>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-end gap-3">
+        <button onclick="closeAddSkillModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs cursor-pointer">
+          Cancel
+        </button>
+        <button onclick="submitNewSkill()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer">
+          <i class="ph-bold ph-check"></i>
+          <span>Save &amp; Bind Skill</span>
+        </button>
+      </div>
     </div>
   </div>
 </body>

@@ -212,6 +212,30 @@ CREATE TABLE IF NOT EXISTS pending_actions (
 );
 CREATE INDEX IF NOT EXISTS idx_actions_project ON pending_actions(project_id, status);
 CREATE INDEX IF NOT EXISTS idx_actions_created ON pending_actions(created_at DESC);
+
+-- 11. Agent Skills: Dynamic bindings of modular prompt/workflow skills per agent and project
+CREATE TABLE IF NOT EXISTS agent_skills (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id VARCHAR(64) DEFAULT 'default_project',
+    agent_role VARCHAR(64) NOT NULL,
+    skill_name VARCHAR(64) NOT NULL,
+    enabled BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(project_id, agent_role, skill_name)
+);
+CREATE INDEX IF NOT EXISTS idx_agent_skills ON agent_skills(project_id, agent_role);
+
+-- 12. Agent Plugins: Physical execution tools or external MCP connections per agent
+CREATE TABLE IF NOT EXISTS agent_plugins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id VARCHAR(64) DEFAULT 'default_project',
+    agent_role VARCHAR(64) NOT NULL,
+    plugin_name VARCHAR(64) NOT NULL,
+    enabled BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(project_id, agent_role, plugin_name)
+);
+CREATE INDEX IF NOT EXISTS idx_agent_plugins ON agent_plugins(project_id, agent_role);
 """
 
 

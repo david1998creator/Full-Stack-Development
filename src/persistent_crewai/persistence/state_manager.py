@@ -1496,3 +1496,68 @@ class StateManager:
             d["options"] = json.loads(d.pop("options_json", "[]") or "[]")
             d["success"] = True
             return d
+
+    # -------------------------------------------------------------------------
+    # Agent Skills & Plugins Bindings
+    # -------------------------------------------------------------------------
+    def get_agent_skills(self, project_id: Optional[str] = None, agent_role: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retrieve active or configured skills per agent role for a project."""
+        pid = project_id or self.project_id
+        with self.connection() as conn:
+            if agent_role:
+                rows = conn.execute(
+                    "SELECT * FROM agent_skills WHERE project_id = ? AND agent_role = ?",
+                    (pid, normalize_role(agent_role))
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM agent_skills WHERE project_id = ?",
+                    (pid,)
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def set_agent_skill(self, agent_role: str, skill_name: str, enabled: bool = True, project_id: Optional[str] = None) -> Dict[str, Any]:
+        """Insert or update dynamic skill binding for an agent role."""
+        pid = project_id or self.project_id
+        canon_role = normalize_role(agent_role)
+        with self.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO agent_skills (project_id, agent_role, skill_name, enabled)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(project_id, agent_role, skill_name) DO UPDATE SET enabled = excluded.enabled
+                """,
+                (pid, canon_role, skill_name, 1 if enabled else 0)
+            )
+        return {"project_id": pid, "agent_role": canon_role, "skill_name": skill_name, "enabled": enabled}
+
+    def get_agent_plugins(self, project_id: Optional[str] = None, agent_role: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retrieve active or configured plugins/tools per agent role for a project."""
+        pid = project_id or self.project_id
+        with self.connection() as conn:
+            if agent_role:
+                rows = conn.execute(
+                    "SELECT * FROM agent_plugins WHERE project_id = ? AND agent_role = ?",
+                    (pid, normalize_role(agent_role))
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM agent_plugins WHERE project_id = ?",
+                    (pid,)
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def set_agent_plugin(self, agent_role: str, plugin_name: str, enabled: bool = True, project_id: Optional[str] = None) -> Dict[str, Any]:
+        """Insert or update dynamic plugin/tool binding for an agent role."""
+        pid = project_id or self.project_id
+        canon_role = normalize_role(agent_role)
+        with self.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO agent_plugins (project_id, agent_role, plugin_name, enabled)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(project_id, agent_role, plugin_name) DO UPDATE SET enabled = excluded.enabled
+                """,
+                (pid, canon_role, plugin_name, 1 if enabled else 0)
+            )
+        return {"project_id": pid, "agent_role": canon_role, "plugin_name": plugin_name, "enabled": enabled}

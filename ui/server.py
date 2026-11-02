@@ -5,8 +5,11 @@ from flask import Flask, jsonify, request, send_from_directory
 import os
 import re
 import json
+import logging
 import datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Automatically load .env from project root
 try:
@@ -1078,6 +1081,131 @@ def get_memory_graph():
             "edge_count": len(edges)
         }
     })
+
+# -----------------------------------------------------------------------------
+# Crew & Dynamic Skills / Plugins APIs
+# -----------------------------------------------------------------------------
+@app.route("/api/crew", methods=["GET"])
+def get_crew_manifests():
+    pid = request.args.get("project_id") or request.args.get("slug") or "default_project"
+    try:
+        from persistent_crewai.agents.registry import SkillPluginRegistry
+        reg = SkillPluginRegistry(workspace_root=workspace_root, state_mgr=state_mgr)
+        manifests = reg.get_all_crew_manifests(project_id=pid)
+        
+        # Merge live agent status from state_mgr
+        statuses = {s["agent_role"]: s for s in state_mgr.get_all_agent_statuses()}
+        for m in manifests:
+            role = m["role"]
+            if role in statuses:
+                m["status"] = statuses[role].get("status", "idle")
+                m["current_task_id"] = statuses[role].get("current_task_id")
+                m["tasks_completed_count"] = statuses[role].get("tasks_completed_count", 0)
+
+        total_skills = sum(len(m.get("skills", [])) for m in manifests)
+        active_skills = sum(len([s for s in m.get("skills", []) if s.get("enabled")]) for m in manifests)
+        total_plugins = sum(len(m.get("plugins", [])) for m in manifests)
+        custom_skills_count = len(reg.get_all_custom_skills())
+
+        return jsonify({
+            "status": "ok",
+            "success": True,
+            "project_id": pid,
+            "crew": manifests,
+            "count": len(manifests),
+            "total_skills": total_skills,
+            "active_skills": active_skills,
+            "custom_skills_count": custom_skills_count,
+            "total_plugins": total_plugins,
+        })
+    except Exception as e:
+        logger.exception("Error fetching crew manifests")
+        return jsonify({"status": "error", "success": False, "error": str(e)}), 500
+
+@app.route("/api/crew/skill/toggle", methods=["POST"])
+def toggle_crew_skill():
+    data = request.get_json(force=True, silent=True) or {}
+    role = data.get("agent_role")
+    skill_name = data.get("skill_name")
+    enabled = bool(data.get("enabled", True))
+    pid = data.get("project_id") or "default_project"
+
+    if not role or not skill_name:
+        return jsonify({"status": "error", "success": False, "error": "agent_role and skill_name are required"}), 400
+
+    try:
+        res = state_mgr.set_agent_skill(agent_role=role, skill_name=skill_name, enabled=enabled, project_id=pid)
+        return jsonify({
+            "status": "ok",
+            "success": True,
+            "agent_role": role,
+            "skill_name": skill_name,
+            "enabled": enabled,
+            "result": res
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "success": False, "error": str(e)}), 500
+
+@app.route("/api/crew/plugin/toggle", methods=["POST"])
+def toggle_crew_plugin():
+    data = request.get_json(force=True, silent=True) or {}
+    role = data.get("agent_role")
+    plugin_name = data.get("plugin_name")
+    enabled = bool(data.get("enabled", True))
+    pid = data.get("project_id") or "default_project"
+
+    if not role or not plugin_name:
+        return jsonify({"status": "error", "success": False, "error": "agent_role and plugin_name are required"}), 400
+
+    try:
+        res = state_mgr.set_agent_plugin(agent_role=role, plugin_name=plugin_name, enabled=enabled, project_id=pid)
+        return jsonify({
+            "status": "ok",
+            "success": True,
+            "agent_role": role,
+            "plugin_name": plugin_name,
+            "enabled": enabled,
+            "result": res
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "success": False, "error": str(e)}), 500
+
+@app.route("/api/crew/skill/create", methods=["POST"])
+def create_custom_skill():
+    data = request.get_json(force=True, silent=True) or {}
+    name = data.get("name") or data.get("skill_name")
+    title = data.get("title") or name
+    target_roles = data.get("target_roles") or ([data.get("target_role")] if data.get("target_role") else ["Developer"])
+    description = data.get("description", "")
+    instructions = data.get("instructions") or data.get("content", "")
+    pid = data.get("project_id") or "default_project"
+
+    if not name or not instructions:
+        return jsonify({"status": "error", "success": False, "error": "name and instructions are required"}), 400
+
+    try:
+        from persistent_crewai.agents.registry import SkillPluginRegistry
+        reg = SkillPluginRegistry(workspace_root=workspace_root, state_mgr=state_mgr)
+        res = reg.save_custom_skill(
+            name=name,
+            title=title,
+            target_roles=target_roles,
+            description=description,
+            instructions=instructions
+        )
+        # Enable it by default for the target roles
+        for tr in res["target_roles"]:
+            state_mgr.set_agent_skill(agent_role=tr, skill_name=res["name"], enabled=True, project_id=pid)
+
+        return jsonify({
+            "status": "ok",
+            "success": True,
+            "skill_name": res["name"],
+            "target_role": res["target_roles"][0] if res["target_roles"] else "Developer",
+            "skill": res
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000, debug=False)

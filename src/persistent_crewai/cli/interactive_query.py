@@ -416,6 +416,16 @@ class InteractiveAgentExecutor:
             include_memory=True,
         )
 
+        # Inject active modular skill guidelines for this role
+        try:
+            from persistent_crewai.agents.registry import SkillPluginRegistry
+            reg = SkillPluginRegistry(workspace_root=self.workspace_root, state_mgr=self.state_manager)
+            skill_instructions = reg.get_injected_prompt_skills(canonical_role, project_id=self.project_id)
+            if skill_instructions:
+                context_block += f"\n\n{skill_instructions}"
+        except Exception as e:
+            logger.debug("Skill injection skipped: %s", e)
+
         active_llm = getattr(agent, "llm", None)
         is_mock = isinstance(active_llm, DeterministicMockLLM)
         old_responses = {}
