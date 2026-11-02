@@ -757,6 +757,16 @@ class StateManager:
         res = self.get_task(task_id)
         return res or {"task_id": task_id, "status": eff_status, "actual_output": eff_output}
 
+    def complete_task(
+        self,
+        task_id: str,
+        output: Optional[str] = None,
+        status: str = "completed",
+        **kwargs: Any
+    ) -> Dict[str, Any]:
+        """Convenience alias for record_task_completion."""
+        return self.record_task_completion(task_id, output=output, actual_output=output, status=status, **kwargs)
+
     def record_task_failure(
         self,
         task_id: str,

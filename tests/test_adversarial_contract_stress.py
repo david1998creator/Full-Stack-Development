@@ -358,7 +358,7 @@ class TestRecordTaskCompletionSignaturePermutations(unittest.TestCase):
         """P2B: Positional contract call with unlisted custom role strings (e.g. 'dev', 'custom_agent').
         Verifies task is recorded and completed, while agent status defaults gracefully for unseeded roles.
         """
-        custom_roles = ["dev", "custom_worker", "security_auditor"]
+        custom_roles = ["dev", "custom_worker", "unlisted_auditor"]
         for idx, role in enumerate(custom_roles):
             task_id = f"task_p2b_{idx}"
             self.sm.record_task_start(

@@ -37,15 +37,15 @@
 * **Embedded Knowledge Graph:** In-browser Cytoscape.js visual graph at `http://127.0.0.1:8000` (Tab 4). Zero external software like Obsidian needed.
 * **10 Specialist Canonical Roles:**
   1. `Coordinator`: Meta-orchestration and task decomposition (`allow_delegation=True`).
-  2. `Architect`: High-level system design and architecture decision records (ADRs).
+  2. `Architect`: High-level system design, container manifests (`Dockerfile`, `docker-compose.yml`), and ADRs.
   3. `Designer`: UI/UX specifications, design systems, and frontend ergonomics.
   4. `Database Engineer`: Schema DDL, foreign keys, migrations, and seed fixtures.
   5. `Developer`: Full-stack coding with on-demand dynamic sub-agent spawning.
-  6. `Tester` (QA): Automated test generation and self-correcting test loops.
-  7. `Security Auditor`: OWASP Top 10 audits and injection prevention.
-  8. `DevOps`: Containerization (`Dockerfile`, `docker-compose.yml`) and environments.
-  9. `Git Manager`: Atomic conventional commits and version tags.
-  10. `Status & Memory Manager`: SQLite WAL syncing and Cytoscape knowledge graph memory.
+  6. `Tester`: Automated test suite generation (`pytest` / `unittest`) and self-correcting test loops.
+  7. `Reviewer`: Principal code review, static analysis, PEP 8 compliance, and architectural verification.
+  8. `Security Auditor`: OWASP Top 10 audits, vulnerability scanning, and injection prevention.
+  9. `GitHub Manager`: Atomic conventional commits, branch management, and release tagging.
+  10. `Memory & Status Manager`: SQLite WAL syncing and Cytoscape knowledge graph memory.
 
 ---
 

@@ -156,7 +156,7 @@ class TestAdversarialDelegationEnforcement(BaseAdversarialTestCase):
     def test_01_canonical_role_definitions_delegation_invariants(self):
         """Verify RoleDefinition objects: ONLY Coordinator has allow_delegation=True."""
         all_defs = list_role_definitions()
-        self.assertEqual(len(all_defs), 8, "Must define exactly 8 canonical roles")
+        self.assertEqual(len(all_defs), 10, "Must define exactly 10 canonical roles")
 
         coordinator_count = 0
         for r_def in all_defs:
@@ -179,7 +179,7 @@ class TestAdversarialDelegationEnforcement(BaseAdversarialTestCase):
     def test_02_instantiated_agents_via_build_team_delegation_invariants(self):
         """Verify all 8 agents from build_team(): ONLY Coordinator delegates."""
         team = build_team(state_manager=self.state_manager, workspace_root=self.workspace_root)
-        self.assertEqual(len(team), 8, "build_team() must return all 8 canonical agents")
+        self.assertEqual(len(team), 10, "build_team() must return all 10 canonical agents")
 
         for role_name, agent in team.items():
             if role_name == "Coordinator":
@@ -257,7 +257,10 @@ class TestAdversarialDelegationEnforcement(BaseAdversarialTestCase):
             ("designer", False),
             ("developer", False),
             ("tester", False),
+            ("qa", False),
+            ("sdet", False),
             ("reviewer", False),
+            ("git", False),
             ("github", False),
             ("github manager", False),
             ("memory", False),
@@ -278,7 +281,7 @@ class TestAdversarialDelegationEnforcement(BaseAdversarialTestCase):
             )
 
         # Unrecognized aliases must strictly fail
-        invalid_aliases = ["dev", "qa", "sdet", "git", "scrum_master", "boss"]
+        invalid_aliases = ["dev", "scrum_master", "boss", "janitor", "intern"]
         for bad_alias in invalid_aliases:
             with self.assertRaises((UnknownRoleError, KeyError)):
                 get_role_definition(bad_alias)
@@ -789,7 +792,7 @@ class TestAdversarialDashboardStress(BaseAdversarialTestCase):
         self.assertIsInstance(rendered, str)
         self.assertIn("DASHBOARD", rendered.upper())
         self.assertIn("Project", rendered)
-        self.assertEqual(len(data["agents"]), 8, "Must always contain all 8 canonical roles")
+        self.assertEqual(len(data["agents"]), 10, "Must always contain all 10 canonical roles")
         self.assertTrue(elapsed < 2.0, f"Dashboard rendering at scale took {elapsed:.2f}s (must be < 2.0s)")
 
     def test_03_ansi_escape_code_and_null_value_resilience(self):

@@ -261,7 +261,7 @@ class TestStateManager(unittest.TestCase):
         self.assertEqual(proj["metadata"]["env"], "testing")
 
         agents = self.sm.get_all_agent_statuses()
-        self.assertEqual(len(agents), 8)
+        self.assertEqual(len(agents), len(CANONICAL_ROLES))
         for a in agents:
             self.assertEqual(a["status"], "idle")
             self.assertEqual(a["tasks_completed_count"], 0)
@@ -422,9 +422,9 @@ class TestStateManager(unittest.TestCase):
 
         dash = self.sm.get_system_dashboard_data()
         self.assertIn("project", dash)
-        self.assertEqual(len(dash["agents"]), 8)
+        self.assertEqual(len(dash["agents"]), len(CANONICAL_ROLES))
         self.assertIn("metrics", dash)
-        self.assertEqual(dash["metrics"]["agents_total"], 8)
+        self.assertEqual(dash["metrics"]["agents_total"], len(CANONICAL_ROLES))
 
     def test_record_event_guarantees_system_run_atomically(self):
         """TC-SM-09: record_event guarantees 'system_run' and project presence atomically without prior run_id."""
@@ -711,7 +711,7 @@ class TestSessionResumptionAndExportImport(unittest.TestCase):
         self.assertIn("recent_decisions", ctx)
         self.assertEqual(len(ctx["recent_decisions"]), 2)
         self.assertIn("agent_states", ctx)
-        self.assertEqual(len(ctx["agent_states"]), 8)
+        self.assertEqual(len(ctx["agent_states"]), len(CANONICAL_ROLES))
 
     def test_workflow_and_milestone_resume_plans(self):
         """TC-SR-04: Generate resume plans for interrupted workflow and active milestone."""

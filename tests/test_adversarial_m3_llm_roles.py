@@ -161,7 +161,7 @@ class TestPromptFuzzingAndAdversarialInputs(unittest.TestCase):
             "Designer": "Designer: define the CLI design tokens and TUI ergonomics",
             "Developer": "Developer: implement software engineering modules and code",
             "Tester": "Tester: run SDET QA regression coverage",
-            "Reviewer": "Reviewer: perform security audit and pep-8 compliance check",
+            "Reviewer": "Reviewer: perform code review and pep-8 compliance check",
             "GitHub Manager": "GitHub Manager: commit changes and create pull request",
             "Memory & Status Manager": "Memory Manager: persist state checkpoints and session resumption",
         }
@@ -503,7 +503,7 @@ class TestLLMFactoryPermutationsAndEnvVars(unittest.TestCase):
     def test_adv_19_missing_api_keys_for_explicit_live_providers(self):
         """Verify requesting live providers without credentials raises descriptive ValueError."""
         # Ensure MOCK flags and keys are cleared
-        for k in ["MOCK_LLM", "CREWAI_MOCK_LLM", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "ANTHROPIC_API_KEY"]:
+        for k in ["MOCK_LLM", "CREWAI_MOCK_LLM", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "GROQ_API_KEY", "NVIDIA_API_KEY"]:
             os.environ.pop(k, None)
 
         provider_key_checks = [
@@ -557,7 +557,7 @@ class TestLLMFactoryPermutationsAndEnvVars(unittest.TestCase):
 
     def test_adv_23_offline_auto_detection_fallback(self):
         """Verify default offline fallback when provider is None and no API keys exist."""
-        for k in ["MOCK_LLM", "CREWAI_MOCK_LLM", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "ANTHROPIC_API_KEY"]:
+        for k in ["MOCK_LLM", "CREWAI_MOCK_LLM", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "GROQ_API_KEY", "NVIDIA_API_KEY"]:
             os.environ.pop(k, None)
 
         llm = get_llm()

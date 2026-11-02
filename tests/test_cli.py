@@ -269,7 +269,7 @@ class TestDashboard(BaseCLITestCase):
         self.assertIn("decisions", data)
         self.assertIn("milestones", data)
         self.assertIn("metrics", data)
-        self.assertEqual(len(data["agents"]), 8)
+        self.assertEqual(len(data["agents"]), len(CANONICAL_ROLES))
 
     def test_13_dashboard_guarantees_eight_canonical_agents_in_order(self) -> None:
         """Verify all 8 canonical roles are present in canonical order."""

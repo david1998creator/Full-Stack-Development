@@ -512,10 +512,13 @@ class TestAdversarialHierarchicalDelegation(unittest.TestCase):
         self.assertEqual(self.runner._determine_target_specialist("any prompt", "tester"), "Tester")
         self.assertEqual(self.runner._determine_target_specialist("any prompt", "reviewer"), "Reviewer")
 
-        # Unrecognized aliases (e.g. 'qa', 'sdet', 'coder') raise KeyError in normalize_role
+        # Recognized aliases in config.py
+        self.assertEqual(self.runner._determine_target_specialist("any prompt", "qa"), "Tester")
+        # Unrecognized aliases (e.g. 'unknown_custom_role') raise KeyError in normalize_role
         # and cleanly fall back to prompt keyword scoring / Developer default
-        self.assertEqual(self.runner._determine_target_specialist("arbitrary prompt", "qa"), "Developer")
-        self.assertEqual(self.runner._determine_target_specialist("review security audit", "coder"), "Reviewer")
+        self.assertEqual(self.runner._determine_target_specialist("arbitrary prompt", "unknown_custom_role"), "Developer")
+        self.assertEqual(self.runner._determine_target_specialist("any prompt", "coder"), "Developer")
+        self.assertEqual(self.runner._determine_target_specialist("review security audit", "unknown_agent"), "Reviewer")
 
     def test_adv_hierarchical_step_telemetry_payload_schema(self):
         """

@@ -20,6 +20,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from persistent_crewai.config import CANONICAL_ROLES
 from persistent_crewai.persistence.session import SessionResumptionManager
 from persistent_crewai.persistence.state_manager import StateManager
 from persistent_crewai.agents.crew_builder import build_agent
@@ -61,7 +62,7 @@ class TestSequentialPipelineRunner(unittest.TestCase):
             workspace_root=self.workspace_root,
         )
         self.assertIs(runner.state_manager, self.state_manager)
-        self.assertEqual(len(runner.team), 8)
+        self.assertEqual(len(runner.team), len(CANONICAL_ROLES))
         self.assertIn("Coordinator", runner.team)
         self.assertIn("Architect", runner.team)
         self.assertIn("Developer", runner.team)

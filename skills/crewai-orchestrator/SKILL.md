@@ -24,15 +24,15 @@ This skill teaches autonomous AI agents and meta-orchestrators how to interact w
   `http://127.0.0.1:8000` (backed by `ui/server.py` and `ui/index.html`)
 * **10 Specialist Canonical Roles:**
   1. **Coordinator**: Orchestration, task decomposition, and milestone governance (`allow_delegation=True`).
-  2. **Architect**: High-level system design, architecture decision records (ADRs), and technology selection.
+  2. **Architect**: High-level system design, container manifests (`Dockerfile`, `docker-compose.yml`), and ADRs.
   3. **Designer**: UI/UX specifications, responsive design systems, and frontend contracts.
   4. **Database Engineer**: Relational schema DDL, foreign key relationships, migrations, and seed data.
   5. **Developer**: Physical full-stack implementation with on-demand dynamic sub-agent spawning.
-  6. **QA / Tester**: Automated test suite generation (`pytest` / `unittest`) and self-correction healing loops.
-  7. **Security Auditor**: OWASP Top 10 scans, SQL injection prevention, and security audit checklists.
-  8. **DevOps Engineer**: Multi-stage Dockerfiles, Docker Compose manifests, and environment configs.
-  9. **Git Manager**: Atomic Git version control, conventional commit messages, and release tagging.
-  10. **Status & Memory Manager**: SQLite WAL synchronization and Cytoscape.js vector memory graphs.
+  6. **Tester**: Automated test suite generation (`pytest` / `unittest`) and self-correction healing loops.
+  7. **Reviewer**: Principal code review, static analysis, PEP 8 compliance, and architectural verification.
+  8. **Security Auditor**: OWASP Top 10 scans, SQL injection prevention, and security audit checklists.
+  9. **GitHub Manager**: Atomic Git version control, conventional commit messages, and release tagging.
+  10. **Memory & Status Manager**: SQLite WAL synchronization and Cytoscape.js vector memory graphs.
 
 ---
 

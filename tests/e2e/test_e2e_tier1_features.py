@@ -580,7 +580,7 @@ class TestTier1FeatureR4CLI(unittest.TestCase):
             self.assertIn("agents", data)
             self.assertIn("decisions", data)
             self.assertIn("milestones", data)
-            self.assertEqual(len(data["agents"]), 8)
+            self.assertEqual(len(data["agents"]), 10)
 
             rendered = render_dashboard(data)
             self.assertIsInstance(rendered, str)

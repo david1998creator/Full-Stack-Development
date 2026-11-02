@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.schema.json",
+  "mcp": {
+    "servers": {
+      "persistent-crewai": {
+        "command": ["python", "mcp_server.py"],
+        "description": "Persistent CrewAI 10-Role Multi-Agent SDLC Server"
+      }
+    }
+  }
+}

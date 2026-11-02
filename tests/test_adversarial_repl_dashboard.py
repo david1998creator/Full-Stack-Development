@@ -406,9 +406,9 @@ class TestStatusDashboardStress(BaseM4StressFixture):
         data = get_dashboard_data(empty_sm)
         self.assertIn("project", data)
         self.assertIn("agents", data)
-        self.assertEqual(len(data["agents"]), 8)
+        self.assertEqual(len(data["agents"]), len(CANONICAL_ROLES))
 
-        # Invariant: All 8 canonical roles in exact canonical order
+        # Invariant: All canonical roles in exact canonical order
         actual_roles = [a["agent_role"] for a in data["agents"]]
         self.assertEqual(actual_roles, CANONICAL_ROLES)
 
@@ -489,13 +489,13 @@ class TestStatusDashboardStress(BaseM4StressFixture):
         elapsed_retrieval = time.time() - start_time
 
         self.assertLess(elapsed_retrieval, 2.0, f"Dashboard retrieval took too long: {elapsed_retrieval:.2f}s")
-        self.assertEqual(len(data["agents"]), 8)
+        self.assertEqual(len(data["agents"]), len(CANONICAL_ROLES))
         self.assertEqual([a["agent_role"] for a in data["agents"]], CANONICAL_ROLES)
 
         # Verify completed tasks metrics
         metrics = data["metrics"]
         self.assertGreater(metrics["tasks_completed_total"], 80)
-        self.assertEqual(metrics["agents_total"], 8)
+        self.assertEqual(metrics["agents_total"], len(CANONICAL_ROLES))
         self.assertEqual(metrics["milestones_total"], 25)
 
         # Render Rich dashboard
@@ -548,8 +548,8 @@ class TestStatusDashboardStress(BaseM4StressFixture):
         data = get_dashboard_data(sm, project_id="rogue_proj")
         agents = data["agents"]
 
-        # Invariant: exactly 8 agents in canonical order
-        self.assertEqual(len(agents), 8)
+        # Invariant: exactly 10 agents in canonical order
+        self.assertEqual(len(agents), len(CANONICAL_ROLES))
         self.assertEqual([a["agent_role"] for a in agents], CANONICAL_ROLES)
         for a in agents:
             self.assertEqual(a["tasks_completed_count"], 5)

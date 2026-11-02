@@ -246,9 +246,11 @@ ROLE_DISTINCTIVE_MARKERS = {
     "Coordinator": "Project Coordinator Status Report",
     "Architect": "System Architecture",
     "Designer": "UI/UX & Design System",
+    "Database Engineer": "Database Engineering",
     "Developer": "Implementation Summary",
     "Tester": "Test Execution & Quality Assurance",
     "Reviewer": "Code Review & Security Audit",
+    "Security Auditor": "Application Security",
     "GitHub Manager": "GitHub & Repository Operations",
     "Memory & Status Manager": "Memory & Operational State",
 }
@@ -259,7 +261,7 @@ class TestRoleValidationStress(BaseAdversarialExecutorTestCase):
 
     def test_01_invalid_role_names(self) -> None:
         """Verify invalid role strings raise UnknownRoleError."""
-        invalid_roles = ["Hacker", "Janitor", "Root", "Admin", "QA Engineer", "", "   "]
+        invalid_roles = ["Hacker", "Janitor", "Root", "Admin", "Scrum Master", "", "   "]
         for role in invalid_roles:
             with self.subTest(role=repr(role)):
                 with self.assertRaises(UnknownRoleError) as ctx:
@@ -700,14 +702,14 @@ class TestSubtaskExecutionStress(BaseAdversarialExecutorTestCase):
             self.assertEqual(res.status, "completed")
             self.assertEqual(res.agent_role, role)
 
-        # Verify all 8 tasks are in task_history
+        # Verify all tasks are in task_history
         db = DatabaseManager(self.db_path)
         with db.connection() as conn:
             cur = conn.cursor()
             cur.execute("SELECT COUNT(DISTINCT task_id), COUNT(DISTINCT agent_role) FROM task_history WHERE status = 'completed'")
             row = cur.fetchone()
-            self.assertEqual(row[0], 8)
-            self.assertEqual(row[1], 8)
+            self.assertEqual(row[0], len(CANONICAL_ROLES))
+            self.assertEqual(row[1], len(CANONICAL_ROLES))
 
 
 if __name__ == "__main__":

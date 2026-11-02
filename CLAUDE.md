@@ -62,7 +62,7 @@ python tests/e2e/test_milestones_and_hitl.py
 ---
 
 ## Architecture Principles
-1. **10 Canonical Roles**: Coordinator, Architect, Designer, Database Engineer, Developer, QA, Security Auditor, DevOps, Git Manager, Status & Memory Manager.
+1. **10 Canonical Roles**: Coordinator, Architect, Designer, Database Engineer, Developer, Tester, Reviewer, Security Auditor, GitHub Manager, Memory & Status Manager.
 2. **ACID Persistence**: State is persisted in SQLite WAL at `.persistent_crewai/state.db`.
 3. **Pre-Execution Budget Guard**: Always verify token and cost estimation in the HITL Drawer before executing extensive developer tasks.
 4. **Portability**: Never commit personal machine paths or API keys.

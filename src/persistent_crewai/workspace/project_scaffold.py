@@ -28,6 +28,15 @@ class ProjectScaffold:
         self.root_path = self.base_dir / self.slug
         self.root_path.mkdir(parents=True, exist_ok=True)
 
+    def ensure_directories(self) -> Path:
+        """
+        Ensures standard subdirectories (src, tests, docs) exist.
+        """
+        (self.root_path / "src").mkdir(parents=True, exist_ok=True)
+        (self.root_path / "tests").mkdir(parents=True, exist_ok=True)
+        (self.root_path / "docs").mkdir(parents=True, exist_ok=True)
+        return self.root_path
+
     def initialize_standard_structure(
         self,
         app_name: str,

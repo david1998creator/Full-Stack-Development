@@ -15,8 +15,8 @@ Get up and running in under 2 minutes:
 
 ### 1. Clone & Set Up Environment
 ```bash
-git clone <repo-url>
-cd persistent_crewai_team
+git clone https://github.com/david1998creator/Full-Stack-Development.git
+cd Full-Stack-Development
 
 # Create and activate virtual environment
 python -m venv .venv
@@ -132,13 +132,13 @@ Autonomous Playwright smoke testing verifying 0 console errors and generating vi
 2. [Control Console & Live System Showcase](#-control-console--live-system-showcase)
 3. [System Overview & Problem Statement](#1-system-overview--problem-statement)
 4. [Complete ASCII Architecture Diagram](#2-complete-ascii-architecture-diagram)
-5. [10 Specialist Canonical Roles Matrix](#3-8-specialist-canonical-roles-matrix)
-5. [Persistence & Session Resumption](#4-persistence--session-resumption)
-6. [Sandboxed Security & Path Traversal Containment](#5-sandboxed-security--path-traversal-containment)
-7. [Bi-Modal GitHub Adapters](#6-bi-modal-github-adapters)
-8. [CLI & Interactive REPL User Guide](#7-cli--interactive-repl-user-guide)
-9. [100% Offline Quickstart & Test Instructions](#8-100-offline-quickstart--test-instructions)
-10. [Verification & Test Coverage Summary](#9-verification--test-coverage-summary)
+5. [10 Specialist Canonical Roles Matrix](#3-10-specialist-canonical-roles-matrix)
+6. [Persistence & Session Resumption](#4-persistence--session-resumption)
+7. [Sandboxed Security & Path Traversal Containment](#5-sandboxed-security--path-traversal-containment)
+8. [Bi-Modal GitHub Adapters](#6-bi-modal-github-adapters)
+9. [CLI & Interactive REPL User Guide](#7-cli--interactive-repl-user-guide)
+10. [Offline Quickstart & Test Instructions](#8-offline-quickstart--test-instructions)
+11. [Verification & Test Coverage Summary](#9-verification--test-coverage-summary)
 
 ---
 
@@ -274,28 +274,30 @@ Modern multi-agent AI frameworks (such as conventional CrewAI configurations) su
 
 ---
 
-## 3. 8 Specialist Canonical Roles Matrix
+## 3. 10 Specialist Canonical Roles Matrix
 
-The framework defines 8 canonical agent roles. Each agent possesses a dedicated goal, professional backstory, specialized system prompt guidelines, assigned tools, and strict delegation boundaries:
+The framework defines 10 canonical agent roles. Each agent possesses a dedicated goal, professional backstory, specialized system prompt guidelines, assigned tools, and strict delegation boundaries:
 
 | Canonical Role Name | Display Name | Specialist Purpose | Assigned Tools | Delegation Allowed | Operational Rules & Highlights |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Coordinator** | Engineering Coordinator & Project Manager | End-to-end orchestration, work breakdown structure (WBS), task delegation, milestone tracking, and executive release synthesis. | `list_workspace_files`, `query_memory`, `record_milestone` | **`True`** *(Only role permitted)* | Deconstructs goals into sequential phases: Architecture &rarr; Design &rarr; Development &rarr; Testing &rarr; Review &rarr; Version Control &rarr; State Persistence. **Never writes code or executes git operations directly.** Requires Reviewer and Tester approval before release. |
-| **Architect** | Lead Systems & Software Architect | System design, Architectural Decision Records (ADRs), SQLite schemas, component boundaries, and technology stack evaluation. | `read_workspace_file`, `list_workspace_files`, `record_decision`, `query_memory` | **`False`** | Formulates concrete file paths, class signatures, and interface contracts. Validates relational schemas against persistence invariants. **Must record all architectural decisions using `record_decision`.** |
+| **Coordinator** | Engineering Coordinator & Project Manager | End-to-end orchestration, work breakdown structure (WBS), task delegation, milestone tracking, and executive release synthesis. | `list_workspace_files`, `query_memory`, `record_milestone` | **`True`** *(Only role permitted)* | Deconstructs goals into sequential phases: Architecture &rarr; Design &rarr; Database &rarr; Development &rarr; Testing &rarr; Review & Security &rarr; Version Control &rarr; State Persistence. **Never writes code or executes git operations directly.** Requires Reviewer, Security Auditor, and Tester approval before release. |
+| **Architect** | Lead Systems & Software Architect | System design, Architectural Decision Records (ADRs), SQLite schemas, component boundaries, container manifests (`Dockerfile`, `docker-compose.yml`), and technology stack evaluation. | `read_workspace_file`, `list_workspace_files`, `record_decision`, `query_memory` | **`False`** | Formulates concrete file paths, class signatures, and interface contracts. Validates relational schemas against persistence invariants. **Must record all architectural decisions using `record_decision`.** |
 | **Designer** | Staff Product & UI/UX Designer | UI/UX specifications, design systems, design tokens, CLI command ergonomics, TUI output formatting, and user interaction flows. | `read_workspace_file`, `write_workspace_file`, `list_workspace_files` | **`False`** | Specifies CLI command grammar, Rich terminal formatting, table aesthetics, and ASCII fallback views. Hands off specifications to Developer for coding and Tester for UX validation. |
-| **Developer** | Senior Software Engineer | Production-grade Python feature implementation, bug fixes, module integrations, and clean refactoring. | `read_workspace_file`, `write_workspace_file`, `patch_workspace_file`, `list_workspace_files` | **`False`** | Implements clean PEP-8 compliant code with complete type annotations (PEP 484/526), docstrings, and robust exception boundaries. Submits all code to Reviewer and Tester. **Forbidden from merging code directly.** |
+| **Database Engineer** | Database & Data Modeling Engineer | Relational schema DDL (`schema.sql`), SQL migrations, foreign key constraints, seed fixtures, and indexing strategies. | `read_workspace_file`, `write_workspace_file`, `list_workspace_files`, `record_decision`, `query_memory` | **`False`** | Produces clean, idempotent SQL DDL (`CREATE TABLE IF NOT EXISTS`). Translates Architect domain models and Designer UI data needs into production schemas before coding starts. |
+| **Developer** | Senior Software Engineer | Production-grade Python feature implementation, bug fixes, module integrations, and clean refactoring. | `read_workspace_file`, `write_workspace_file`, `patch_workspace_file`, `list_workspace_files` | **`False`** | Implements clean PEP-8 compliant code with complete type annotations (PEP 484/526), docstrings, and robust exception boundaries. Dynamically spawns lightweight subagents for complex subtasks. Submits all code to Reviewer and Tester. **Forbidden from merging code directly.** |
 | **Tester** | Lead SDET & QA Automation Engineer | Unit, integration, and E2E test suite authoring in `tests/`, test execution, regression auditing, and QA sign-off certification. | `read_workspace_file`, `list_workspace_files` | **`False`** | Builds deterministic, isolated test suites using pytest fixtures and mocks. Validates cross-session state persistence. Issues `FAIL` verdicts to Developer and `PASS` certifications to Coordinator. **Forbidden from writing production business logic.** |
-| **Reviewer** | Principal Code Reviewer & Security Auditor | Rigorous static analysis, security audits (OWASP Top 10, CWE), PEP-8 compliance, typing checks, and architectural verification. | `read_workspace_file`, `list_workspace_files`, `query_memory` | **`False`** | Scans for SQL injection, path traversal escapes, and hardcoded secrets. Categorizes findings into `CRITICAL`, `MAJOR`, `MINOR`, and `OPTIMIZATION`. Renders unambiguous verdicts: `APPROVED` or `CHANGES_REQUESTED`. **Does not modify source files directly.** |
-| **GitHub Manager** | Lead DevOps & Repository Operations Specialist | Git repository lifecycles, branch strategies, Conventional Commits, Pull Request automation, and issue tracking. | `github_issue_tool`, `github_pr_tool`, `github_branch_tool`, `github_commit_tool`, `github_repo_status_tool` | **`False`** | Enforces Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`). Creates branches and PRs **only after Reviewer and Tester sign-off**. Operates offline via `MockGitHubAdapter` or online via `RealGitHubAdapter`. **Does not write application code.** |
+| **Reviewer** | Principal Code Reviewer | Rigorous static analysis, PEP-8 compliance, typing checks, and architectural verification. | `read_workspace_file`, `list_workspace_files`, `query_memory` | **`False`** | Categorizes findings into `CRITICAL`, `MAJOR`, `MINOR`, and `OPTIMIZATION`. Renders unambiguous verdicts: `APPROVED` or `CHANGES_REQUESTED`. **Does not modify source files directly.** |
+| **Security Auditor** | Application Security & Vulnerability Auditor | OWASP Top 10 audits, SQL injection prevention, credential scanning, path traversal validation, and threat mitigation. | `read_workspace_file`, `list_workspace_files`, `record_decision`, `query_memory` | **`False`** | Scans code, endpoints, dependencies, and configuration for security flaws. Verifies that API keys and secrets are never committed. Issues authoritative security sign-offs. |
+| **GitHub Manager** | Lead DevOps & Repository Operations Specialist | Git repository lifecycles, branch strategies, Conventional Commits, Pull Request automation, and issue tracking. | `github_issue_tool`, `github_pr_tool`, `github_branch_tool`, `github_commit_tool`, `github_repo_status_tool` | **`False`** | Enforces Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`). Creates branches and PRs **only after Reviewer, Security Auditor, and Tester sign-off**. Operates offline via `MockGitHubAdapter` or online via `RealGitHubAdapter`. **Does not write application code.** |
 | **Memory & Status Manager** | State Persistence & Knowledge Memory Specialist | Transactional state persistence, operational health telemetry, task execution history, and semantic memory indexing. | `record_decision`, `record_milestone`, `query_memory` | **`False`** | Persists decisions, milestones, and task latency metrics into SQLite WAL storage. Maintains vector embeddings and FTS5 indices. Rehydrates state for cross-session resumption. **Never modifies application code or Git repositories directly.** |
 
 ### Delegation Invariant Guarantees
 1. **Single Delegator**: Only the **Coordinator** has `allow_delegation = True`. This eliminates circular delegation graphs ($A \to B \to A$), non-terminating agent chatter, and unmonitored lateral task handoffs.
-2. **Explicit Leaf Execution**: All 7 specialists have `allow_delegation = False`. When assigned a task by the Coordinator or triggered directly via the CLI/REPL, each specialist executes strictly within its declared domain tools and returns an authoritative result.
+2. **Explicit Leaf Execution**: All 9 specialists have `allow_delegation = False`. When assigned a task by the Coordinator or triggered directly via the CLI/REPL/MCP, each specialist executes strictly within its declared domain tools and returns an authoritative result.
 3. **Segregation of Duties**:
    - The *Developer* cannot approve code or create pull requests.
-   - The *Reviewer* cannot modify code directly; it issues audits and verdicts.
-   - The *GitHub Manager* cannot push commits or open pull requests without explicit sign-off from both *Reviewer* and *Tester*.
+   - The *Reviewer* and *Security Auditor* cannot modify code directly; they issue audits and verdicts.
+   - The *GitHub Manager* cannot push commits or open pull requests without explicit sign-off from *Reviewer*, *Security Auditor*, and *Tester*.
    - The *Coordinator* orchestrates and synthesizes but writes zero application code.
 
 ---
@@ -795,19 +797,19 @@ The REPL executes each command in sequence, prints formatted telemetry to stdout
 
 ---
 
-## 8. 100% Offline Quickstart & Test Instructions
+## 8. Offline Quickstart & Test Instructions
 
-### 8.1 System Prerequisites
+### 8.1 System Prerequisites & Operational Modes
 - **Python**: Python 3.11, 3.12, or 3.13.
 - **Operating System**: Windows 10/11 / Windows Server, Linux (Ubuntu, Debian, Fedora, RHEL), macOS (Apple Silicon / Intel).
-- **Network**: **Zero internet connection required**.
-- **API Keys**: **Zero API keys required**. Works completely offline without OpenAI, Google, Anthropic, or GitHub keys.
+- **Live Autonomous Mode**: Requires at least one API key configured in `.env` (Google Gemini and Groq offer 100% free keys with no credit card required).
+- **Deterministic Offline / Mock Mode**: Activated via the `--mock` flag or `MOCK_LLM=1` environment variable. Runs 100% offline with zero API keys and zero cost, providing deterministic simulated responses for automated test suites (pytest/unittest) and CI pipelines without burning tokens.
 
 ### 8.2 Hermetic Offline Mechanics
 
 | Component | Offline Implementation | Determinism & Safety Guarantee |
 | :--- | :--- | :--- |
-| **LLM Inference** | `DeterministicMockLLM` | Emits distinct, role-grounded technical reports for all 8 roles without network calls. Inspects prompt context to echo project name and active milestone. Emits SHA-256 fallback hash for novel prompts. Zero cost, zero API keys. |
+| **LLM Inference** | `DeterministicMockLLM` | Emits distinct, role-grounded technical reports for all 10 canonical roles without network calls. Inspects prompt context to echo project name and active milestone. Zero cost, zero API keys required. Activated via `MOCK_LLM=1` or `--mock`. |
 | **Vector Embeddings** | `DeterministicHashEmbeddingProvider` | Computes normalized 64-dimensional float vectors ($L_2 = 1.0$) using SHA-256 tokenization and seeded pseudo-random projections. Guarantees cosine similarity semantic discrimination without external API calls. |
 | **GitHub Operations** | `MockGitHubAdapter` | File-backed simulation (`.persistent_crewai/mock_github.json`) of GitHub REST API v3. Implements atomic writes, auto-incrementing issue/PR numbers, SHA commit hashing, and thread safety via re-entrant locks. Activates automatically when `GITHUB_TOKEN` is unset. |
 | **Database Storage** | SQLite 3 WAL Mode | Single-file database (`.persistent_crewai/state.db`) requiring no external database server (PostgreSQL/MySQL). Concurrency-resilient with 5-second busy timeout and WAL journaling. |
@@ -834,13 +836,19 @@ crewai-team --help
 #### On Linux / macOS (Bash / Zsh):
 ```bash
 # 1. Clone or navigate to the repository root
-cd /path/to/persistent_crewai_team
+git clone https://github.com/david1998creator/Full-Stack-Development.git
+cd Full-Stack-Development
 
 # 2. Create and activate a Python virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
 # 3. Install package in editable development mode
+pip install -e .
+
+# 4. Verify CLI installation
+crewai-team --help
+```
 pip install -e .
 
 # 4. Verify CLI installation
